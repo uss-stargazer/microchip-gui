@@ -25,7 +25,7 @@ const theme = createTheme({
     background: { default: "#151515ff" },
   },
   typography: {
-    fontFamily: "Fira Code",
+    fontFamily: "Cascadia Code",
     fontSize: 13,
   },
 });

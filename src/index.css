@@ -1,7 +1,7 @@
 @font-face {
-  font-family: "Fira Code";
-  src: local("Fira Code"),
-    url("assets/fonts/FiraCode-VariableFont_wght.ttf") format("truetype");
+  font-family: "Cascadia Code";
+  src: local("Cascadia Code"),
+    url("assets/fonts/CascadiaCode-VariableFont_wght.ttf") format("truetype");
 }
 
 :root {

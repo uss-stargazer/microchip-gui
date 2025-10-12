@@ -1,0 +1,23 @@
+@font-face {
+  font-family: "Fira Code";
+  src: local("Fira Code"),
+    url("assets/fonts/FiraCode-VariableFont_wght.ttf") format("truetype");
+}
+
+:root {
+  color-scheme: light dark;
+
+  max-width: 1280px;
+  text-align: center;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}

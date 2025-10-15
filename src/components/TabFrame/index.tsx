@@ -70,7 +70,11 @@ function TabBar({
   );
 }
 
-function TabFrame({ barButtons }: {
+function TabFrame({
+  defaultTab,
+  barButtons,
+}: {
+  defaultTab: ReactElement;
   barButtons?: TabBarButton[];
 }) {
   const [currentTabId, setCurrentTabId] = useState<TabId | undefined>();
@@ -111,9 +115,7 @@ function TabFrame({ barButtons }: {
         addTab={addTab}
         deleteTab={deleteTab}
       />
-      <Box flexGrow={1}>
-        {currentTab ? currentTab.element : null}
-      </Box>
+      <Box flexGrow={1}>{currentTab ? currentTab.element : defaultTab}</Box>
     </Box>
   );
 }

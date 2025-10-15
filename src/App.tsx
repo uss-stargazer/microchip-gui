@@ -38,6 +38,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <TabFrame
+        defaultTab={<Home />}
         barButtons={tabBarButtons.map(({ icon, tab }) =>
           makeTabBarButton(icon, tab)
         )}

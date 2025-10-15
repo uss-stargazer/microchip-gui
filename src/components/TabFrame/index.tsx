@@ -8,26 +8,26 @@ export interface Tab {
   element: ReactElement;
 }
 
-export type AddTabFunction = (target: Tab) => void; // TODO: replace with SwitchTab because its more general and doesn't throw errors
+export type SwitchTabFunction = (target: Tab) => void;
 export type DeleteTabFunction = (targetId: TabId) => void;
 
 export type TabBarButton = React.FunctionComponent<{
-  addTab: AddTabFunction;
+  switchTab: SwitchTabFunction;
   deleteTab: DeleteTabFunction;
 }>;
 
 function TabBar({
-  tabs,
-  currentTabId,
-  setCurrentTabId,
-  addTab,
+  tabInformation,
+  switchTab,
   deleteTab,
   buttons,
 }: {
-  tabs: Tab[];
-  currentTabId: TabId | undefined;
-  setCurrentTabId: React.Dispatch<React.SetStateAction<string | undefined>>;
-  addTab: AddTabFunction;
+  tabInformation: {
+    tabs: Tab[];
+    currentTabId: TabId | undefined;
+    setCurrentTabId: React.Dispatch<React.SetStateAction<string | undefined>>;
+  };
+  switchTab: SwitchTabFunction;
   deleteTab: DeleteTabFunction;
   buttons: TabBarButton[];
 }) {
@@ -38,13 +38,15 @@ function TabBar({
       sx={{ display: "flex", justifyContent: "space-between" }}
     >
       <Box sx={{ display: "flex" }}>
-        {tabs.map(({ id }) => (
+        {tabInformation.tabs.map(({ id }) => (
           <Box
             component={Button}
             variant="outlined"
-            onClick={() => setCurrentTabId(id)}
+            onClick={() => tabInformation.setCurrentTabId(id)}
             color="text.primary"
-            bgcolor={id === currentTabId ? "background.paper" : ""}
+            bgcolor={
+              id === tabInformation.currentTabId ? "background.paper" : ""
+            }
             sx={{
               p: 0,
               paddingLeft: "10px",
@@ -63,7 +65,7 @@ function TabBar({
       </Box>
       <Box sx={{ display: "flex" }}>
         {buttons.map((BarButton: TabBarButton) => (
-          <BarButton addTab={addTab} deleteTab={deleteTab}></BarButton>
+          <BarButton switchTab={switchTab} deleteTab={deleteTab}></BarButton>
         ))}
       </Box>
     </Box>
@@ -80,20 +82,20 @@ function TabFrame({
   const [currentTabId, setCurrentTabId] = useState<TabId | undefined>();
   const [tabs, setTabs] = useState<Tab[]>([]);
 
-  const addTab: AddTabFunction = (target: Tab) => {
-    tabs.forEach(({ id }) => {
-      if (id === target.id) throw new Error("Tab with id already exists");
-    });
-    setTabs([...tabs, { id: target.id, element: target.element }]);
+  const switchTab: SwitchTabFunction = (target: Tab) => {
+    if (tabs.find(({ id }) => id === target.id)) {
+      setCurrentTabId(target.id);
+    } else {
+      setCurrentTabId(target.id);
+      setTabs([...tabs, target]);
+    }
   };
 
   const deleteTab: DeleteTabFunction = (targetId: TabId) => {
     setTabs(tabs.filter(({ id }) => id !== targetId));
   };
 
-  const currentTab: Tab | undefined = tabs.find(
-    ({ id }) => id === currentTabId
-  );
+  const currentTab = tabs.find(({ id }) => id === currentTabId);
   if (!currentTab && tabs.length > 0) {
     setCurrentTabId(tabs[tabs.length - 1].id);
   }
@@ -108,11 +110,13 @@ function TabFrame({
       }}
     >
       <TabBar
-        tabs={tabs}
-        currentTabId={currentTabId}
-        setCurrentTabId={setCurrentTabId}
+        tabInformation={{
+          tabs: tabs,
+          currentTabId: currentTabId,
+          setCurrentTabId: setCurrentTabId,
+        }}
         buttons={barButtons ?? []}
-        addTab={addTab}
+        switchTab={switchTab}
         deleteTab={deleteTab}
       />
       <Box flexGrow={1}>{currentTab ? currentTab.element : defaultTab}</Box>

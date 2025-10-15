@@ -3,9 +3,9 @@ import type { Tab, TabBarButton } from "../components/TabFrame";
 import { Button, IconButton } from "@mui/material";
 
 function makeTabBarButton(icon: ReactElement, tab: Tab): TabBarButton {
-  return ({ addTab }) => (
+  return ({ switchTab }) => (
     <Button
-      onClick={() => addTab(tab)}
+      onClick={() => switchTab(tab)}
       color="secondary"
       sx={{
         p: 0,

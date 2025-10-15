@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@emotion/react";
 import { createTheme, CssBaseline } from "@mui/material";
+import TabFrame from "./components/TabFrame";
 
 const theme = createTheme({
   palette: {
@@ -22,6 +23,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <TabFrame barButtons={[]} />
     </ThemeProvider>
   );
 }

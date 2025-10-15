@@ -1,10 +1,11 @@
-import { Box } from "@mui/material";
+import { Box, type SxProps } from "@mui/material";
 import type { PropsWithChildren } from "react";
 
 function Tab({
   flex,
+  sx,
   children,
-}: PropsWithChildren<{ flex?: "row" | "column" }>) {
+}: PropsWithChildren<{ flex?: "row" | "column"; sx?: SxProps }>) {
   return (
     <Box
       sx={{
@@ -12,6 +13,7 @@ function Tab({
         height: "100%",
         display: flex ? "flex" : null,
         flexDirection: flex,
+        ...sx,
       }}
     >
       {children}

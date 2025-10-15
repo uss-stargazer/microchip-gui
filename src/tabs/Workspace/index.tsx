@@ -1,13 +1,13 @@
 import { Box } from "@mui/material";
 import Sidebar from "./components/Sidebar";
-import Tab from "../../components/Tab";
+import TabLayout from "../../components/TabLayout";
 
 function Workspace() {
   return (
-    <Tab flex="row">
+    <TabLayout flex="row">
       <Box sx={{ flexGrow: 1 }}></Box>
       <Sidebar />
-    </Tab>
+    </TabLayout>
   );
 }
 

@@ -1,7 +1,7 @@
 import { Box, type SxProps } from "@mui/material";
 import type { PropsWithChildren } from "react";
 
-function Tab({
+function TabLayout({
   flex,
   sx,
   children,
@@ -21,4 +21,4 @@ function Tab({
   );
 }
 
-export default Tab;
+export default TabLayout;

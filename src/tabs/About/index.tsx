@@ -1,9 +1,9 @@
 import { Typography } from "@mui/material";
-import Tab from "../../components/Tab";
+import TabLayout from "../../components/TabLayout";
 
 function About() {
   return (
-    <Tab
+    <TabLayout
       flex="column"
       sx={{ margin: "auto", maxWidth: "800px", p: "1rem", gap: "1rem" }}
     >
@@ -19,7 +19,7 @@ function About() {
         is a single entity with its own internal state and that can be
         implemented in the state of any other component. This allows modularity
       </Typography>
-    </Tab>
+    </TabLayout>
   );
 }
 

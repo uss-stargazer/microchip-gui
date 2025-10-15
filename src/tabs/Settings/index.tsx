@@ -1,7 +1,7 @@
-import Tab from "../../components/Tab";
+import TabLayout from "../../components/TabLayout";
 
 function Settings() {
-  return <Tab>Settings</Tab>;
+  return <TabLayout>Settings</TabLayout>;
 }
 
 export default Settings;

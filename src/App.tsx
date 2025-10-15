@@ -38,7 +38,8 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <TabFrame
-        defaultTab={<Home />}
+        noneSelectedTab={<Home />}
+        defaultTab={{ id: "Workspace", element: <Workspace /> }}
         barButtons={tabBarButtons.map(({ icon, tab }) =>
           makeTabBarButton(icon, tab)
         )}

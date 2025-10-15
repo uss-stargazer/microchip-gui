@@ -1,6 +1,6 @@
 import React, { useState, type ReactElement } from "react";
 import { Box, Button, IconButton, Typography } from "@mui/material";
-import { MdClose } from "react-icons/md";
+import { MdAdd, MdClose } from "react-icons/md";
 
 export type TabId = string;
 export interface Tab {
@@ -20,6 +20,7 @@ function TabBar({
   tabInformation,
   switchTab,
   deleteTab,
+  defaultTab,
   buttons,
 }: {
   tabInformation: {
@@ -29,6 +30,7 @@ function TabBar({
   };
   switchTab: SwitchTabFunction;
   deleteTab: DeleteTabFunction;
+  defaultTab: Tab;
   buttons: TabBarButton[];
 }) {
   return (
@@ -62,6 +64,9 @@ function TabBar({
             </IconButton>
           </Box>
         ))}
+        <IconButton onClick={() => switchTab(defaultTab)}>
+          <MdAdd />
+        </IconButton>
       </Box>
       <Box sx={{ display: "flex" }}>
         {buttons.map((BarButton: TabBarButton) => (
@@ -73,10 +78,12 @@ function TabBar({
 }
 
 function TabFrame({
+  noneSelectedTab,
   defaultTab,
   barButtons,
 }: {
-  defaultTab: ReactElement;
+  noneSelectedTab: ReactElement;
+  defaultTab: Tab;
   barButtons?: TabBarButton[];
 }) {
   const [currentTabId, setCurrentTabId] = useState<TabId | undefined>();
@@ -116,10 +123,13 @@ function TabFrame({
           setCurrentTabId: setCurrentTabId,
         }}
         buttons={barButtons ?? []}
+        defaultTab={defaultTab}
         switchTab={switchTab}
         deleteTab={deleteTab}
       />
-      <Box flexGrow={1}>{currentTab ? currentTab.element : defaultTab}</Box>
+      <Box flexGrow={1}>
+        {currentTab ? currentTab.element : noneSelectedTab}
+      </Box>
     </Box>
   );
 }

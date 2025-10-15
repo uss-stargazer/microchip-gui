@@ -2,6 +2,8 @@ import React, { useState, type ReactElement } from "react";
 import { Box, Button, IconButton, Typography } from "@mui/material";
 import { MdAdd, MdClose } from "react-icons/md";
 
+// TODO: multiple tabs of the same type need to be created (maybe have a `type` field in addition to the `id`)
+
 export type TabId = string;
 export interface Tab {
   id: TabId;
@@ -34,11 +36,7 @@ function TabBar({
   buttons: TabBarButton[];
 }) {
   return (
-    <Box
-      width="100vw"
-      bgcolor="grey.800"
-      sx={{ display: "flex", justifyContent: "space-between" }}
-    >
+    <Box width="100vw" bgcolor="grey.800" display="flex">
       <Box sx={{ display: "flex" }}>
         {tabInformation.tabs.map(({ id }) => (
           <Box
@@ -46,13 +44,13 @@ function TabBar({
             variant="outlined"
             onClick={() => tabInformation.setCurrentTabId(id)}
             color="text.primary"
-            bgcolor={
-              id === tabInformation.currentTabId ? "background.paper" : ""
-            }
             sx={{
-              p: 0,
-              paddingLeft: "10px",
+              paddingRight: "0.5rem",
               borderRadius: 0,
+              borderWidth: id === tabInformation.currentTabId ? null : 0,
+              borderBottomWidth: id === tabInformation.currentTabId ? 0 : "1px",
+              bgcolor:
+                id === tabInformation.currentTabId ? "background.paper" : null,
               display: "flex",
               alignItems: "center",
               gap: "10px",
@@ -64,14 +62,25 @@ function TabBar({
             </IconButton>
           </Box>
         ))}
+      </Box>
+      <Box
+        sx={{
+          width: "100%",
+          borderBottomWidth: "1px",
+          borderBottomStyle: "solid",
+          borderBottomColor: "primary.dark",
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
         <IconButton onClick={() => switchTab(defaultTab)}>
           <MdAdd />
         </IconButton>
-      </Box>
-      <Box sx={{ display: "flex" }}>
-        {buttons.map((BarButton: TabBarButton) => (
-          <BarButton switchTab={switchTab} deleteTab={deleteTab}></BarButton>
-        ))}
+        <Box display="flex">
+          {buttons.map((BarButton: TabBarButton) => (
+            <BarButton switchTab={switchTab} deleteTab={deleteTab}></BarButton>
+          ))}
+        </Box>
       </Box>
     </Box>
   );

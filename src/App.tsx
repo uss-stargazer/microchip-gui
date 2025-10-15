@@ -3,13 +3,14 @@ import { createTheme, CssBaseline } from "@mui/material";
 import type { ReactElement } from "react";
 import { MdInfo, MdSettings } from "react-icons/md";
 
-import TabFrame, { type Tab } from "./components/TabFrame";
-
 import Home from "./tabs/Home";
 import About from "./tabs/About";
 import Settings from "./tabs/Settings";
 import Workspace from "./tabs/Workspace";
+
 import makeTabBarButton from "./modules/makeTabBarButton";
+import type { Tab } from "./components/Tabs/module/tabTypes";
+import Tabs from "./components/Tabs";
 
 const theme = createTheme({
   palette: {
@@ -37,7 +38,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <TabFrame
+      <Tabs
         noneSelectedTab={<Home />}
         defaultTab={{ id: "Workspace", element: <Workspace /> }}
         barButtons={tabBarButtons.map(({ icon, tab }) =>

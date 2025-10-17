@@ -52,7 +52,14 @@ function TabBar({
             }}
           >
             <Typography variant="body2">{id}</Typography>
-            <IconButton onClick={() => deleteTab(id)} size="small">
+            <IconButton
+              onClick={(event) => {
+                event.stopPropagation(); // Prevent also triggering switch tab
+                deleteTab(id);
+              }}
+              size="small"
+              sx={{ zIndex: 10 }}
+            >
               <MdClose />
             </IconButton>
           </Box>

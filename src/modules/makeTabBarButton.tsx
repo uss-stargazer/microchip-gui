@@ -1,20 +1,20 @@
+import { IconButton } from "@mui/material";
+import type { TabBarElement } from "../components/Tabs/module/tabTypes";
 import type { ReactElement } from "react";
-import type { Tab, TabBarButton } from "../components/TabFrame";
-import { Button, IconButton } from "@mui/material";
 
-function makeTabBarButton(icon: ReactElement, tab: Tab): TabBarButton {
-  return ({ switchTab }) => (
-    <Button
-      onClick={() => switchTab(tab)}
-      color="secondary"
+function makeTabBarButton(icon: ReactElement): TabBarElement {
+  return ({ addTargetTab }) => (
+    <IconButton
+      onClick={addTargetTab}
+      size="small"
       sx={{
-        p: 0,
+        width: "2.5rem",
         borderRadius: 0,
-        border: "1px solid rgba(0,0,0,0)",
+        p: 0,
       }}
     >
-      <IconButton size="small">{icon}</IconButton>
-    </Button>
+      {icon}
+    </IconButton>
   );
 }
 

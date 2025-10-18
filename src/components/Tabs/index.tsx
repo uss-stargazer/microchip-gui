@@ -1,46 +1,27 @@
-import { useState, type ReactElement } from "react";
-import { Box } from "@mui/material";
+import { type ReactElement } from "react";
 
-import type {
-  DeleteTabFunction,
-  SwitchTabFunction,
-  Tab,
-  TabId,
-} from "./module/tabTypes";
-import type { TabBarButton } from "./components/TabBar";
+import type { TabConfiguration, TabType } from "./module/tabTypes";
 import TabBar from "./components/TabBar";
+import { Box } from "@mui/material";
+import useStoredTabs from "./hooks/useStoredTabs";
 
 // TODO: multiple tabs of the same type need to be created (maybe have a `type` field in addition to the `id`)
 
 function Tabs({
-  noneSelectedTab,
-  defaultTab,
-  barButtons,
+  tabs,
+  defaultElement,
 }: {
-  noneSelectedTab: ReactElement;
-  defaultTab: Tab;
-  barButtons?: TabBarButton[];
+  tabs: { [key: TabType]: TabConfiguration };
+  defaultElement: ReactElement;
 }) {
-  const [currentTabId, setCurrentTabId] = useState<TabId | undefined>();
-  const [tabs, setTabs] = useState<Tab[]>([]);
+  const [storedTabs, setStoredTabs] = useStoredTabs();
+  const { currentTabs, currentTabId } = storedTabs;
 
-  const switchTab: SwitchTabFunction = (target: Tab) => {
-    if (tabs.find(({ id }) => id === target.id)) {
-      setCurrentTabId(target.id);
-    } else {
-      setCurrentTabId(target.id);
-      setTabs([...tabs, target]);
-    }
-  };
-
-  const deleteTab: DeleteTabFunction = (targetId: TabId) => {
-    setTabs(tabs.filter(({ id }) => id !== targetId));
-  };
-
-  const currentTab = tabs.find(({ id }) => id === currentTabId);
-  if (!currentTab && tabs.length > 0) {
-    setCurrentTabId(tabs[tabs.length - 1].id);
-  }
+  console.log("getting the tab elemnt:");
+  const currentTabElement =
+    currentTabId !== null && currentTabId !== -1
+      ? tabs[currentTabs[currentTabId].type].element
+      : null;
 
   return (
     <Box
@@ -51,20 +32,8 @@ function Tabs({
         flexDirection: "column",
       }}
     >
-      <TabBar
-        tabInformation={{
-          tabs: tabs,
-          currentTabId: currentTabId,
-          setCurrentTabId: setCurrentTabId,
-        }}
-        buttons={barButtons ?? []}
-        defaultTab={defaultTab}
-        switchTab={switchTab}
-        deleteTab={deleteTab}
-      />
-      <Box flexGrow={1}>
-        {currentTab ? currentTab.element : noneSelectedTab}
-      </Box>
+      <TabBar tabConfigs={tabs} tabs={storedTabs} setTabs={setStoredTabs} />
+      <Box flexGrow={1}>{currentTabElement || defaultElement}</Box>
     </Box>
   );
 }

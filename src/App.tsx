@@ -1,7 +1,6 @@
 import { ThemeProvider } from "@emotion/react";
 import { createTheme, CssBaseline } from "@mui/material";
-import type { ReactElement } from "react";
-import { MdInfo, MdSettings } from "react-icons/md";
+import { MdEdit, MdInfo, MdSettings } from "react-icons/md";
 
 import Home from "./tabs/Home";
 import About from "./tabs/About";
@@ -9,8 +8,9 @@ import Settings from "./tabs/Settings";
 import Workspace from "./tabs/Workspace";
 
 import makeTabBarButton from "./modules/makeTabBarButton";
-import type { Tab } from "./components/Tabs/module/tabTypes";
-import Tabs from "./components/Tabs";
+import StoredTabs from "./components/Tabs";
+import Editor from "./tabs/Editor";
+import { SettingsProvider } from "./hooks/useSettings";
 
 const theme = createTheme({
   palette: {
@@ -19,7 +19,7 @@ const theme = createTheme({
       main: "#b388ff",
     },
     secondary: {
-      main: "#c62828",
+      main: "#1c6666ff",
     },
     background: { default: "#151515ff" },
   },
@@ -29,22 +29,46 @@ const theme = createTheme({
   },
 });
 
-const tabBarButtons: { icon: ReactElement; tab: Tab }[] = [
-  { icon: <MdInfo />, tab: { id: "About", element: <About /> } },
-  { icon: <MdSettings />, tab: { id: "Settings", element: <Settings /> } },
-];
-
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Tabs
-        noneSelectedTab={<Home />}
-        defaultTab={{ id: "Workspace", element: <Workspace /> }}
-        barButtons={tabBarButtons.map(({ icon, tab }) =>
-          makeTabBarButton(icon, tab)
-        )}
-      />
+      <SettingsProvider>
+        <StoredTabs
+          defaultElement={<Home />}
+          tabs={{
+            Workspace: {
+              element: <Workspace />,
+              isUnique: false,
+              accessiblity: { location: "add tab" },
+            },
+            Editor: {
+              element: <Editor />,
+              isUnique: true,
+              accessiblity: {
+                location: "tab bar",
+                element: makeTabBarButton(<MdEdit />),
+              },
+            },
+            About: {
+              element: <About />,
+              isUnique: true,
+              accessiblity: {
+                location: "tab bar",
+                element: makeTabBarButton(<MdInfo />),
+              },
+            },
+            Settings: {
+              element: <Settings />,
+              isUnique: true,
+              accessiblity: {
+                location: "tab bar",
+                element: makeTabBarButton(<MdSettings />),
+              },
+            },
+          }}
+        />
+      </SettingsProvider>
     </ThemeProvider>
   );
 }

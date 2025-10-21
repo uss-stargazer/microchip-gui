@@ -1,18 +1,20 @@
 import { ThemeProvider } from "@emotion/react";
 import { createTheme, CssBaseline } from "@mui/material";
 import { MdEdit, MdInfo, MdSettings } from "react-icons/md";
+import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
+import { convert } from "colorizr";
 
 import Home from "./tabs/Home";
 import About from "./tabs/About";
 import Settings from "./tabs/Settings";
 import Workspace from "./tabs/Workspace";
 
+import { SettingsProvider } from "./hooks/useSettings";
 import makeTabBarButton from "./modules/makeTabBarButton";
 import StoredTabs from "./components/Tabs";
 import Editor from "./tabs/Editor";
-import { SettingsProvider } from "./hooks/useSettings";
 
-const theme = createTheme({
+export const theme = createTheme({
   palette: {
     mode: "dark",
     primary: {

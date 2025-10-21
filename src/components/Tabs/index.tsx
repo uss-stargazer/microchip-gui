@@ -17,7 +17,6 @@ function Tabs({
   const [storedTabs, setStoredTabs] = useStoredTabs();
   const { currentTabs, currentTabId } = storedTabs;
 
-  console.log("getting the tab elemnt:");
   const currentTabElement =
     currentTabId !== null && currentTabId !== -1
       ? tabs[currentTabs[currentTabId].type].element

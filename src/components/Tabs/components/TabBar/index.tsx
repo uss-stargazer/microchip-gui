@@ -55,7 +55,6 @@ function TabBar({
           ? currentTabId - 1
           : currentTabId,
     };
-    console.log(tab);
     setTabs(tab);
   };
 

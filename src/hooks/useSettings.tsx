@@ -8,9 +8,14 @@ import {
   type SetStateAction,
 } from "react";
 import type { MicrochipState } from "microchip-dsl";
+import {
+  createLocalStorageEntry,
+  parseLocalStorageEntry,
+} from "../modules/utils";
 
 export interface Settings {
   state: MicrochipState | null;
+  editor: string | null;
   style: {};
 }
 
@@ -25,6 +30,7 @@ export interface SettingsContextStructure {
 const defaultSettingsStruct: SettingsContextStructure = {
   settings: {
     state: null,
+    editor: null,
     style: {},
   },
   setSettings: () => {
@@ -39,9 +45,9 @@ export const SettingsContext = createContext<SettingsContextStructure>(
 );
 
 export function SettingsProvider({ children }: PropsWithChildren) {
-  const getFromLocalStorage = (key: string): Object | null => {
+  const getFromLocalStorage = (key: string): any | null => {
     const valueString = localStorage.getItem(key);
-    return valueString ? JSON.stringify(valueString) : null;
+    return valueString ? parseLocalStorageEntry(valueString) : null;
   };
 
   const settings: Settings = defaultSettingsStruct.settings;
@@ -51,19 +57,23 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   > = new Map();
 
   const processSetting = <T extends keyof Settings>(setting: T): void => {
+    const storedValue = getFromLocalStorage(setting);
     const [value, setValue] = useState<Settings[T]>(
-      (getFromLocalStorage(setting) ||
-        defaultSettingsStruct.settings[setting]) as Settings[T]
+      storedValue
+        ? (storedValue as Settings[T])
+        : defaultSettingsStruct.settings[setting]
     );
 
     useEffect(() => {
-      const valueString = JSON.stringify(value);
+      const valueString = createLocalStorageEntry(value);
       if (valueString !== localStorage.getItem(setting)) {
         localStorage.setItem(setting, valueString);
       }
     }, [value]);
 
-    setSettingsFunctions.set(setting, setValue);
+    setSettingsFunctions.set(setting, (vaule) => {
+      setValue(vaule);
+    });
     settings[setting] = value;
   };
 
@@ -88,6 +98,7 @@ function useSettings(): [
   SettingsContextStructure["setSettings"]
 ] {
   const { settings, setSettings } = useContext(SettingsContext);
+  console.log("got settings from context:", settings.editor);
   return [settings, setSettings];
 }
 

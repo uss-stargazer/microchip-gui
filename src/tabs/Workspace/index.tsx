@@ -7,10 +7,14 @@ import Sidebar from "./components/Sidebar";
 import CircuitGraph from "./components/CircuitGraph";
 import NullStateBanner from "./components/NullStateBanner";
 import useSettings from "../../hooks/useSettings";
+import ErrorBanner from "./components/ErrorBanner";
 
 function Workspace() {
   const [settings] = useSettings();
-  const microchipState = settings.state;
+  const { state: microchipState, errorMessage } = settings;
+
+  const banner =
+    !microchipState && (errorMessage ? <ErrorBanner /> : <NullStateBanner />);
 
   return (
     <TabLayout
@@ -20,10 +24,13 @@ function Workspace() {
       }}
     >
       <Box sx={{ flexGrow: 1, height: "100%" }}>
-        {microchipState ? (
+        {banner && (
+          <Box bgcolor="warning.dark" p="1rem">
+            {banner}
+          </Box>
+        )}
+        {microchipState && (
           <CircuitGraph config={parseMicrochipState(microchipState)} />
-        ) : (
-          <NullStateBanner />
         )}
       </Box>
       <Sidebar />

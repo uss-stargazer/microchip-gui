@@ -1,4 +1,4 @@
-import { Typography } from "@mui/material";
+import { Divider, Typography } from "@mui/material";
 import TabLayout from "../../components/TabLayout";
 
 function About() {
@@ -7,7 +7,12 @@ function About() {
       flex="column"
       sx={{ margin: "auto", maxWidth: "800px", p: "1rem", gap: "1rem" }}
     >
-      <hr />
+      <Typography variant="h2" fontSize="clamp(2.25rem,10vw,2.5rem)">
+        Microchip GUI
+      </Typography>
+
+      <Divider color="white" />
+
       <Typography variant="h6">
         <span style={{ fontWeight: "lighter" }}>Microchip GUI</span> is a
         interface for displaying, <br />

@@ -14,10 +14,11 @@ import {
 import { type MicrochipState, Microchip } from "microchip-dsl";
 import { type Signal, nullSignal, copySignal } from "microchip-dsl/signal";
 import * as ts from "typescript";
+import defaultSettingStruct from "../modules/defaultSettings";
 
 export interface Settings {
-  state: MicrochipState | null;
-  editor: string | null;
+  state: MicrochipState;
+  editor: string;
   errorMessage: string | null;
   style: {};
 }
@@ -26,27 +27,12 @@ export interface SettingsContextStructure {
   settings: Settings;
   setSettings: <T extends keyof Settings>(
     setting: T,
-    newValue: Settings[T]
+    newValue: Settings[T] | undefined
   ) => void;
 }
 
-const defaultSettingsStruct: SettingsContextStructure = {
-  settings: {
-    state: null,
-    editor: null,
-    errorMessage: null,
-    style: {},
-  },
-  setSettings: () => {
-    throw new Error(
-      "Settings has not been initialized yet (needs to be child of SettingsProvider)"
-    );
-  },
-};
-
-export const SettingsContext = createContext<SettingsContextStructure>(
-  defaultSettingsStruct
-);
+export const SettingsContext =
+  createContext<SettingsContextStructure>(defaultSettingStruct);
 
 export function SettingsProvider({ children }: PropsWithChildren) {
   // --- Helper functions
@@ -58,7 +44,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
 
   // --- For each setting in settings: Create state and read from / create localStorage entrie
 
-  const settings: Settings = defaultSettingsStruct.settings;
+  const settings: Settings = { ...defaultSettingStruct.settings }; // have to copy entries
   const setSettingsFunctions: Map<
     keyof Settings,
     Dispatch<SetStateAction<any>>
@@ -69,7 +55,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     const [value, setValue] = useState<Settings[T]>(
       storedValue
         ? (storedValue as Settings[T])
-        : defaultSettingsStruct.settings[setting]
+        : defaultSettingStruct.settings[setting]
     );
 
     useEffect(() => {
@@ -79,9 +65,8 @@ export function SettingsProvider({ children }: PropsWithChildren) {
       }
     }, [value]);
 
-    setSettingsFunctions.set(setting, (vaule) => {
-      setValue(vaule);
-    });
+    setSettingsFunctions.set(setting, setValue);
+
     settings[setting] = value;
   };
 
@@ -93,7 +78,11 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     setting,
     newValue
   ) => {
-    setSettingsFunctions.get(setting)!(newValue);
+    setSettingsFunctions.get(setting)!(
+      typeof newValue === "undefined"
+        ? defaultSettingStruct.settings["editor"]
+        : newValue
+    );
   };
   const settingsContextStruct: SettingsContextStructure = {
     settings: settings,
@@ -108,6 +97,11 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     // error stack trace, which breaks the way microchip-dsl runs. (THIS NEEDS TO BE FIXED!!)
     const microchipState: MicrochipState | null =
       ((): MicrochipState | null => {
+        if (!settings.editor) {
+          setSettings("errorMessage", null);
+          return null;
+        }
+
         let microchipState: MicrochipState | null = null;
         try {
           eval(
@@ -140,7 +134,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
         return microchipState;
       })();
 
-    setSettings("state", microchipState);
+    setSettings("state", microchipState || undefined);
   }, [settings.editor]);
 
   return (
@@ -153,7 +147,6 @@ function useSettings(): [
   SettingsContextStructure["setSettings"]
 ] {
   const { settings, setSettings } = useContext(SettingsContext);
-  console.log("got settings from context:", settings.editor);
   return [settings, setSettings];
 }
 

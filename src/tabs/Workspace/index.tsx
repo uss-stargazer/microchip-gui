@@ -4,7 +4,7 @@ import TabLayout from "../../components/TabLayout";
 import parseMicrochipState from "./modules/parseMicrochipState";
 
 import Sidebar from "./components/Sidebar";
-import CircuitGraph from "./components/CircuitGraph";
+import CircuitNetwork from "./components/CircuitNetwork";
 import NullStateBanner from "./components/NullStateBanner";
 import useSettings from "../../hooks/useSettings";
 import ErrorBanner from "./components/ErrorBanner";
@@ -30,7 +30,7 @@ function Workspace() {
           </Box>
         )}
         {microchipState && (
-          <CircuitGraph config={parseMicrochipState(microchipState)} />
+          <CircuitNetwork width="100%" height="100%" data={microchipState} />
         )}
       </Box>
       <Sidebar />

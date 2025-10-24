@@ -2,32 +2,15 @@ import useSettings from "../../hooks/useSettings";
 import TabLayout from "../../components/TabLayout";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useReducer, useRef } from "react";
 
 import MonacoEditor from "@monaco-editor/react";
 import { Box, Button } from "@mui/material";
 import StatusDropdown from "./components/StatusDropdown";
 import { setReadOnlyLines, setupMonaco } from "./modules/monacoUtils";
 
-const sampleEditorContents = `
-// This is an sample circuit (a simle XOR gate). 
-// Edit the code between the two //------- marks to create your own. 
- 
-// Docs: https://github.com/uss-stargazer/microchip-dsl/docs (DOESN'T WORK!)
-
-const and = microchip.registerGate('and', 2, 1);
-const nand = microchip.registerGate('nand', 2, 1);
-const or = microchip.registerGate('or', 2, 1);
-
-const xor = microchip.registerChipSingleOut((a: Signal, b: Signal): Signal => {
-  return and(nand(a, b), or(a, b));
-});
-
-const main = xor;
-`;
-
 function wrapEditorContents(editorContents: string): string {
-  return `import { Microchip, Signal, nullSignal, copySignal } from "microchip-dsl";
+  return `import { Microchip, type Signal, nullSignal, copySignal } from "microchip-dsl";
 
 const microchip = new Microchip();
 
@@ -53,6 +36,8 @@ function unwrapEditorContents(editorContents: string): string {
 }
 
 function Editor() {
+  const [, forceRerender] = useReducer((x) => x + 1, 0);
+
   const [settings, setSettings] = useSettings();
   const { editor: editorContents, errorMessage } = settings;
 
@@ -76,11 +61,9 @@ function Editor() {
 
   useEffect(() => {
     if (editorRef.current) {
-      editorRef.current.setValue(
-        wrapEditorContents(editorContents ?? sampleEditorContents)
-      );
+      editorRef.current.setValue(wrapEditorContents(editorContents));
     }
-  }, [editorContents]);
+  });
 
   return (
     <TabLayout flex="column">
@@ -97,15 +80,20 @@ function Editor() {
         <StatusDropdown errorMessage={errorMessage} />
         <Box flexGrow={1} />
         <Button onClick={saveEditor}>Save</Button>
-        <Button onClick={() => setSettings("editor", null)}>Reset</Button>
+        <Button
+          onClick={() => {
+            setSettings("editor", undefined);
+            forceRerender();
+          }}
+        >
+          Reset
+        </Button>
       </Box>
       <MonacoEditor
         height="100%"
         width="100%"
         defaultLanguage="typescript"
-        defaultValue={wrapEditorContents(
-          editorContents ?? sampleEditorContents
-        )}
+        defaultValue={wrapEditorContents(editorContents)}
         beforeMount={setupMonaco}
         onMount={handleEditorMount}
         theme="microchip-gui"

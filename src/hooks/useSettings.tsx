@@ -42,7 +42,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     return valueString ? parseLocalStorageEntry(valueString) : null;
   };
 
-  // --- For each setting in settings: Create state and read from / create localStorage entrie
+  // --- For each setting in settings: Create state and read from / create localStorage entry (Not the most typesafe implementation but it'll do)
 
   const settings: Settings = { ...defaultSettingStruct.settings }; // have to copy entries
   const setSettingsFunctions: Map<

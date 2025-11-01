@@ -34,9 +34,9 @@ function drawCircuitNetwork(svg: SVGSVGElement, data: MicrochipState) {
   const svgHandle = d3.select(svg);
 
   svgHandle
-    .selectAll("circle")
+    .selectAll("line")
     .data(Array.from(data.componentRegistry))
-    .join("circle")
+    .join("line")
     .attr("fill", "green")
     .attr("cx", (circ) => Math.random() * 100)
     .attr("cy", (circ) => Math.random() * 100)

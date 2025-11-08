@@ -1,25 +1,32 @@
 import * as d3 from "d3";
 import { useEffect, useRef } from "react";
-import type { Node, Link, Data } from "./modules/drawCircuitNetwork";
-import drawCircuitNetwork from "./modules/drawCircuitNetwork";
 import type { MicrochipState } from "microchip-dsl";
+import drawComponent from "./modules/drawComponent";
 
-function CircuitNetwork({
+function MicrochipCicuit({
   width,
   height,
-  data,
+  state,
 }: {
   width: string;
   height: string;
-  data: MicrochipState;
+  state: MicrochipState;
 }) {
   const circuitRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     if (circuitRef.current) {
-      drawCircuitNetwork(circuitRef.current, data);
+      const circuitSelection = d3.select(circuitRef.current);
+
+      // Implement pan zoom
+
+      drawComponent(
+        state.rootComponent,
+        state.componentRegistry,
+        circuitSelection
+      );
     }
-  }, [data]);
+  }, [state]);
 
   return (
     <div>
@@ -36,4 +43,4 @@ function CircuitNetwork({
   );
 }
 
-export default CircuitNetwork;
+export default MicrochipCicuit;

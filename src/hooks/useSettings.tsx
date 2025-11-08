@@ -7,14 +7,14 @@ import {
   type PropsWithChildren,
   type SetStateAction,
 } from "react";
-import {
-  createLocalStorageEntry,
-  parseLocalStorageEntry,
-} from "../modules/utils";
 import { type MicrochipState, Microchip } from "microchip-dsl";
 import { type Signal, nullSignal, copySignal } from "microchip-dsl/signal";
 import * as ts from "typescript";
 import defaultSettingStruct from "../modules/defaultSettings";
+import {
+  createLocalStorageEntry,
+  parseLocalStorageEntry,
+} from "../modules/localStorage";
 
 export interface Settings {
   state: MicrochipState;

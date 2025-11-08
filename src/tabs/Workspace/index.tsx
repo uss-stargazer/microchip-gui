@@ -1,17 +1,18 @@
 import { Box } from "@mui/material";
 
 import TabLayout from "../../components/TabLayout";
-import parseMicrochipState from "./modules/parseMicrochipState";
 
 import Sidebar from "./components/Sidebar";
-import CircuitNetwork from "./components/CircuitNetwork";
 import NullStateBanner from "./components/NullStateBanner";
 import useSettings from "../../hooks/useSettings";
 import ErrorBanner from "./components/ErrorBanner";
+import MicrochipCicuit from "./components/CircuitNetwork";
 
 function Workspace() {
-  const [settings] = useSettings();
-  const { state: microchipState, errorMessage } = settings;
+  const [{ state: microchipState, errorMessage }] = useSettings();
+
+  console.log("microchip state", microchipState);
+  console.log("is map", microchipState.componentRegistry instanceof Map);
 
   const banner =
     !microchipState && (errorMessage ? <ErrorBanner /> : <NullStateBanner />);
@@ -30,7 +31,7 @@ function Workspace() {
           </Box>
         )}
         {microchipState && (
-          <CircuitNetwork width="100%" height="100%" data={microchipState} />
+          <MicrochipCicuit width="100%" height="100%" state={microchipState} />
         )}
       </Box>
       <Sidebar />

@@ -8,3 +8,4 @@ Graphical interface for displaying, testing, and exporting electrical circuits. 
 - About page has bad formatting
 - Do the workspace stuff
 - Add component search bar for spawning workspaces
+- Monaco editor does not load when offline

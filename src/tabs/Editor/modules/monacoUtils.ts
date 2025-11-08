@@ -10,7 +10,7 @@ export async function setupMonaco(monaco: Monaco) {
     inherit: true,
     rules: [],
     colors: {
-      "editor.background": convert(theme.palette.background.default, "hex"),
+      "editor.background": convert(theme.palette.background.paper, "hex"),
     },
   });
 

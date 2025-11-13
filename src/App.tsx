@@ -1,8 +1,6 @@
 import { ThemeProvider } from "@emotion/react";
 import { createTheme, CssBaseline } from "@mui/material";
 import { MdEdit, MdInfo, MdSettings } from "react-icons/md";
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
-import { convert } from "colorizr";
 
 import Home from "./tabs/Home";
 import About from "./tabs/About";

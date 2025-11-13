@@ -37,9 +37,9 @@ export const SettingsContext =
 export function SettingsProvider({ children }: PropsWithChildren) {
   // --- Helper functions
 
-  const getFromLocalStorage = (key: string): any | null => {
+  const getFromLocalStorage = (key: string): any | undefined => {
     const valueString = localStorage.getItem(key);
-    return valueString ? parseLocalStorageEntry(valueString) : null;
+    return valueString ? parseLocalStorageEntry(valueString) : undefined;
   };
 
   // --- For each setting in settings: Create state and read from / create localStorage entry (Not the most typesafe implementation but it'll do)
@@ -53,7 +53,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   const processSetting = <T extends keyof Settings>(setting: T): void => {
     const storedValue = getFromLocalStorage(setting);
     const [value, setValue] = useState<Settings[T]>(
-      storedValue
+      storedValue !== undefined
         ? (storedValue as Settings[T])
         : defaultSettingStruct.settings[setting]
     );

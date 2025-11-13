@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html style="margin: 0">
+  <head></head>
+  <body style="margin: 0">
+    <div
+      style="width: 100vw; height: 100vh; display: flex; flex-direction: column"
+    >
+      <div style="height: 100px; background-color: purple"></div>
+      <svg style="flex-grow: 1; background-color: aqua; margin: 0; padding: 0">
+        <symbol id="test" viewBox="0 0 400 200" preserveAspectRatio="xMinYMin">
+          <rect x="0" y="0" width="100%" height="100%" style="fill: red"></rect>
+          <text x="150" y="100" style="font-size: 16; color: black">
+            Hello!
+          </text>
+        </symbol>
+        <symbol id="main" viewBox="0 0 40 2" preserveAspectRatio="xMinYMin">
+          <rect
+            id="rect1"
+            x="0"
+            y="0"
+            width="50%"
+            height="50%"
+            style="fill: blue"
+          ></rect>
+          <text
+            x="25%"
+            y="25%"
+            style="
+              font-size: 2.5%;
+              fill: white;
+              text-anchor: middle;
+              alignment-baseline: middle;
+              inline-size: 10%;
+            "
+          >
+            Main likes to eat beans and chug salsa.
+          </text>
+          <use x="50%" y="50%" width="50%" height="50%" href="#test" />
+        </symbol>
+      </svg>
+      <svg width="100w" height="400">
+        <use href="#main" transform="scale(1)"></use>
+      </svg>
+    </div>
+  </body>
+</html>

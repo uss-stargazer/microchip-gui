@@ -18,6 +18,7 @@ const xor = microchip.registerChipSingleOut((a: Signal, b: Signal): Signal => {
 const main = xor;
 `;
 
+// TODO: Should this really be hard coded?
 const defaultStateSetting: MicrochipState = {
   rootComponent: 3,
   componentRegistry: new Map([

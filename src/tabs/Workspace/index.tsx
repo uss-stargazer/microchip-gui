@@ -11,9 +11,6 @@ import MicrochipCicuit from "./components/CircuitNetwork";
 function Workspace() {
   const [{ state: microchipState, errorMessage }] = useSettings();
 
-  console.log("microchip state", microchipState);
-  console.log("is map", microchipState.componentRegistry instanceof Map);
-
   const banner =
     !microchipState && (errorMessage ? <ErrorBanner /> : <NullStateBanner />);
 

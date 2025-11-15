@@ -6,7 +6,7 @@ import Sidebar from "./components/Sidebar";
 import NullStateBanner from "./components/NullStateBanner";
 import useSettings from "../../hooks/useSettings";
 import ErrorBanner from "./components/ErrorBanner";
-import MicrochipCicuit from "./components/CircuitNetwork";
+import MicrochipCicuit from "./components/MicrochipCicuit";
 
 function Workspace() {
   const [{ state: microchipState, errorMessage }] = useSettings();

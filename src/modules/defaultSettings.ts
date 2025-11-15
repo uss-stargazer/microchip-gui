@@ -32,7 +32,7 @@ const defaultStateSetting: MicrochipState = {
         nOutputs: 1,
         state: {
           components: [1, 2, 0],
-          connections: new Set([
+          connections: [
             {
               source: { component: "input", pin: 0 },
               destination: { component: 0, pin: 0 },
@@ -61,7 +61,7 @@ const defaultStateSetting: MicrochipState = {
               source: { component: 2, pin: 0 },
               destination: { component: "output", pin: 0 },
             },
-          ]),
+          ],
         },
         style: {},
       },
@@ -74,7 +74,14 @@ const defaultSettingStruct: Readonly<SettingsContextStructure> = {
     state: defaultStateSetting,
     editor: defaultEditorSetting,
     errorMessage: null,
-    style: {},
+    preferences: {
+      defaultComponentColor: "orange",
+    },
+    graphics: {
+      groupWiresIntoCables: true,
+      reoptimizeLayoutOnChipOpen: true,
+      chipPadding: 10,
+    },
   },
   setSettings: () => {
     throw new Error(

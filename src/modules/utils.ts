@@ -3,6 +3,7 @@ export function camelize(s: string): string {
 }
 
 export function getStyle(el: any, styleProp: string): any {
+  console.log("el", el);
   if (el.currentStyle) {
     return el.currentStyle[camelize(styleProp)];
   } else if (document.defaultView && document.defaultView.getComputedStyle) {

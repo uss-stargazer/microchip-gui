@@ -7,8 +7,6 @@ import {
   type PropsWithChildren,
   type SetStateAction,
 } from "react";
-import { type MicrochipState, Microchip } from "microchip-dsl";
-import { type Signal, nullSignal, copySignal } from "microchip-dsl/signal";
 import * as ts from "typescript";
 import defaultSettingStruct from "../modules/defaultSettings";
 import {
@@ -16,11 +14,24 @@ import {
   parseLocalStorageEntry,
 } from "../modules/localStorage";
 
+// Until I find a better way to run user inputted Javascript in the browser,
+// these need to be here to provide the imports for the editor.
+import { type MicrochipState, Microchip } from "microchip-dsl";
+import { type Signal, nullSignal, copySignal } from "microchip-dsl/signal";
+
 export interface Settings {
   state: MicrochipState;
   editor: string;
   errorMessage: string | null;
-  style: {};
+  preferences: {
+    defaultComponentColor: string;
+  };
+  graphics: {
+    groupWiresIntoCables: boolean;
+    reoptimizeLayoutOnChipOpen: boolean;
+    chipPadding: number;
+  };
+  openChipHashes: string[];
 }
 
 export interface SettingsContextStructure {

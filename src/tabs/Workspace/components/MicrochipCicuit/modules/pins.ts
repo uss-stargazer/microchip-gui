@@ -2,7 +2,7 @@ import * as d3 from "d3";
 import { type D3Selection } from "./utils";
 
 export const CLOSED_PIN_RADIUS = 5;
-export const OPEN_PIN_RADIUS = 7;
+export const OPEN_PIN_RADIUS = 6;
 export const PIN_PADDING = 2;
 
 export const getPinIdAttr = (idx: number, direction: "input" | "output") =>

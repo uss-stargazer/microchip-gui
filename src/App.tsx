@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@emotion/react";
 import { createTheme, CssBaseline } from "@mui/material";
 import { MdEdit, MdInfo, MdSettings } from "react-icons/md";
+import "./monacoInit";
 
 import Home from "./tabs/Home";
 import About from "./tabs/About";

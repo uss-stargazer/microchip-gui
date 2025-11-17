@@ -139,6 +139,7 @@ function TabBar({
       <Box sx={{ display: "flex" }}>
         {currentTabs.map(({ name, type }, id) => (
           <Box
+            key={id}
             component={Button}
             variant="outlined"
             onClick={() => setTabs({ ...tabs, currentTabId: id })}
@@ -165,6 +166,7 @@ function TabBar({
           >
             <Typography variant="body2">{name ?? type}</Typography>
             <IconButton
+              component="a"
               onClick={(event) => {
                 event.stopPropagation(); // Prevent also triggering switch tab
                 deleteTab(id);
@@ -189,8 +191,9 @@ function TabBar({
       >
         {AddTabButton ? <AddTabButton /> : null}
         <Box display="flex">
-          {tabBarElements.map(({ type, element: BarButton }) => (
+          {tabBarElements.map(({ type, element: BarButton }, idx) => (
             <BarButton
+              key={idx}
               addTargetTab={() => addTab(type)}
               addTab={addTab}
               deleteTab={deleteTab}

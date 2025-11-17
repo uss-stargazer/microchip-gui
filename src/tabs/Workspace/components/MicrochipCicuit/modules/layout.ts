@@ -8,9 +8,11 @@ export interface SubcomponentLayoutData {
   nOutputs: number;
 }
 
-function caculateWirePaths(
+export function caculateWirePaths(
   componentPositions: Position[],
-  connections: ChipComponent["state"]["connections"]
+  connections: ChipComponent["state"]["connections"],
+  widthLimit: number,
+  heightLimit: number
 ): Position[][] {
   return connections.map(() => {
     return Array.from({ length: Math.random() * 5 }, () => {
@@ -28,16 +30,13 @@ export function getLayout(
   width: number;
   height: number;
   componentPositions: Position[];
-  wirePaths: Position[][];
 } {
   const componentPositions = components.map((component) => {
     return { x: Math.random() * 300, y: Math.random() * 500 };
   });
-  const wirePaths = caculateWirePaths(componentPositions, connections);
   return {
-    width: 300,
-    height: 500,
+    width: forceDimensions?.[0] || 300,
+    height: forceDimensions?.[1] || 500,
     componentPositions: componentPositions,
-    wirePaths: wirePaths,
   };
 }

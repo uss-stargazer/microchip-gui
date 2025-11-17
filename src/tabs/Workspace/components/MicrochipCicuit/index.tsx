@@ -69,7 +69,7 @@ function makeCircuitComponent(
       );
   }
 
-  return rootComponent;
+  rootComponent.select(".component > rect").style("fill", "rgba(0,0,0,0)");
 }
 
 function MicrochipCicuit({

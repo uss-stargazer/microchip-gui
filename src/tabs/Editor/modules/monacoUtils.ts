@@ -1,7 +1,7 @@
 import { convert } from "colorizr";
 import { theme } from "../../../App";
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
-import type { Monaco } from "@monaco-editor/react";
+import * as monacoLib from "monaco-editor";
+import { type Monaco } from "@monaco-editor/react";
 import microchipDslLibraryAsString from "./microchipDslLibraryAsString";
 
 export async function setupMonaco(monaco: Monaco) {
@@ -48,11 +48,12 @@ export async function setupMonaco(monaco: Monaco) {
     noSemanticValidation: false,
     noSyntaxValidation: false,
     noSuggestionDiagnostics: false,
+    diagnosticCodesToIgnore: [6133],
   });
 }
 
 export function setReadOnlyLines(
-  editor: monaco.editor.IStandaloneCodeEditor,
+  editor: monacoLib.editor.IStandaloneCodeEditor,
   lineSections: [number, number][]
 ) {
   editor.onDidChangeCursorPosition((e) => {

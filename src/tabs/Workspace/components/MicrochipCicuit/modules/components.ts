@@ -6,25 +6,28 @@ import type {
   GateComponent,
 } from "microchip-dsl/component";
 import {
+  cloneD3NestedElement,
   getFontSize,
   positionsToPathData,
   type ConnectionIndex,
   type D3Selection,
+  type Position,
   type SubcomponentIndex,
 } from "./utils";
 import { theme } from "../../../../../App";
-import { PIN_PADDING, PIN_RADIUS, renderClosedComponentPins } from "./pins";
 import { displaySettings } from "..";
 import { getLayout, type SubcomponentLayoutData } from "./layout";
-import { addOpenChip, getChipOpeness } from "./saveOpened";
+import { addOpenChip, getChipOpeness, removeOpenChip } from "./openness";
+import {
+  CLOSED_PIN_RADIUS,
+  getOpenPinYCoordinate,
+  PIN_PADDING,
+  renderComponentPins,
+} from "./pins";
 
 const GATE_PADDING = 5;
 const TEXT_LINE_PADDING = 10;
 
-export const getSubcomponentIdAttr = (id: SubcomponentIndex): string =>
-  `s-${id.toString()}`;
-export const parseSubcomponentIdAttr = (idAttr: string): SubcomponentIndex =>
-  Number(idAttr.slice(2));
 export const getWireIdAttr = (id: ConnectionIndex): string =>
   `w-${id.toString()}`;
 export const parseWireIdAttr = (idAttr: string): ConnectionIndex =>
@@ -35,6 +38,14 @@ export const getComponentIdAttr = (
   definition?: "definition"
 ): string =>
   ["c", id.toString(), chipState, definition].filter((part) => part).join("-");
+export const getSubcomponentIdAttr = (
+  idx: SubcomponentIndex,
+  parentSubcomponentId: string
+): string => `${parentSubcomponentId}${idx.toString()}`;
+
+export const componentIsChip = (id: ComponentId): boolean =>
+  document.getElementById(getComponentIdAttr(id, "closed", "definition")) !==
+  null;
 
 function buildGate(
   id: ComponentId,
@@ -62,14 +73,12 @@ function buildGate(
     .text((word) => word)
     .style("alignment-baseline", "middle")
     .style("text-anchor", "middle")
-    .each(function (_, idx, tspans) {
-      // Line formatting
-      const tspan = d3.select(this);
-      tspan.attr("dy", idx - (tspans.length / 2 - 0.5) * TEXT_LINE_PADDING);
-
+    .attr("dy", function (_, idx, tspans) {
       // Trying to get the max word length, which will be the length of the label
-      const wordLength = tspan.node()!.getComputedTextLength();
+      const wordLength = this.getComputedTextLength();
       if (wordLength > labelTextLength) labelTextLength = wordLength;
+
+      return idx - (tspans.length / 2 - 0.5) * TEXT_LINE_PADDING;
     });
 
   const labelFontSize = getFontSize(
@@ -80,8 +89,8 @@ function buildGate(
   const boxWidth = labelTextLength + 2 * GATE_PADDING,
     boxHeight = Math.max(
       labelFontSize * labelWords.length + 2 * GATE_PADDING,
-      gate.nInputs * (PIN_RADIUS * 2 + PIN_PADDING * 2),
-      gate.nOutputs * (PIN_RADIUS * 2 + PIN_PADDING * 2)
+      gate.nInputs * (CLOSED_PIN_RADIUS * 2 + PIN_PADDING * 2),
+      gate.nOutputs * (CLOSED_PIN_RADIUS * 2 + PIN_PADDING * 2)
     );
 
   // Add x and y data to group element so it can be accessed outside this function
@@ -98,25 +107,27 @@ function buildGate(
   g.append("g")
     .attr("class", "input-pins")
     .call(
-      renderClosedComponentPins,
+      renderComponentPins,
+      "input",
+      "closed",
       Array.from({ length: gate.nInputs }, (_, idx) =>
         gate.style.inputNames?.at(idx)
       ),
       0,
-      [0, boxHeight],
-      "input"
+      [0, boxHeight]
     );
 
   g.append("g")
     .attr("class", "output-pins")
     .call(
-      renderClosedComponentPins,
+      renderComponentPins,
+      "output",
+      "closed",
       Array.from({ length: gate.nOutputs }, (_, idx) =>
         gate.style.outputNames?.at(idx)
       ),
       boxWidth,
-      [0, boxHeight],
-      "output"
+      [0, boxHeight]
     );
 
   g.append("rect")
@@ -126,7 +137,7 @@ function buildGate(
     .attr("height", boxHeight)
     .style(
       "fill",
-      gate.style.color ?? displaySettings?.preferences.defaultComponentColor
+      gate.style.color ?? displaySettings.preferences.defaultComponentColor
     );
 
   // Update text dimensions and put back on top after everything else was built
@@ -155,15 +166,11 @@ function buildClosedChip(
   buildGate(id, unbeakedChip as GateComponent, g);
   chip.state = chipStateSave;
 
-  g.attr("id", chipDefId)
-    .attr("class", "component")
-    .on("click", () => {
-      addOpenChip();
-    });
+  g.attr("id", chipDefId).attr("class", "component");
   return chipDefId;
 }
 
-function buildOpenChip(
+function buildOpenChipSkeleton(
   id: ComponentId,
   chip: ChipComponent,
   g: D3Selection<SVGGElement>
@@ -174,13 +181,97 @@ function buildOpenChip(
   const chipDefId = getComponentIdAttr(id, "open", "definition");
   g.attr("id", chipDefId).attr("class", "component");
 
+  // Then the bound box (actual component pin positions will come during population)
+
+  g.append("rect").style(
+    "fill",
+    chip.style.color ?? displaySettings.preferences.defaultComponentColor
+  );
+
+  g.append("g")
+    .attr("class", "input-pins")
+    .call(
+      renderComponentPins,
+      "input",
+      "open",
+      Array.from({ length: chip.nInputs }, (_, idx) =>
+        chip.style.inputNames?.at(idx)
+      ),
+      0,
+      [0, 0]
+    );
+
+  g.append("g")
+    .attr("class", "output-pins")
+    .call(
+      renderComponentPins,
+      "output",
+      "open",
+      Array.from({ length: chip.nOutputs }, (_, idx) =>
+        chip.style.outputNames?.at(idx)
+      ),
+      0,
+      [0, 0]
+    );
+
+  // Finally, the internals
+
+  const a = g
+    .append("g")
+    .attr("class", "subcomponents")
+    .selectAll("g")
+    .data(chip.state.components)
+    .enter()
+    .append("g")
+    .attr("class", "subcomponent")
+    .attr("subcomponent-idx", (_, idx) => idx);
+  console.log(a.data());
+
+  g.append("g")
+    .attr("class", "wires")
+    .selectAll("path")
+    .data(chip.state.connections)
+    .enter()
+    .append("path")
+    .attr("class", "wire")
+    .attr("fill", "transparent")
+    .attr("stroke", "black")
+    .attr("id", (_, idx) => getWireIdAttr(idx)); // IDs are important for electrical simulation
+
+  return chipDefId;
+}
+
+function populateOpenChipSkeleton(
+  chip: D3Selection<SVGGElement>,
+  subcomponentIdPrefix: string,
+  forceDimensions?: [number, number]
+) {
+  const box = chip.selectChild<SVGRectElement>("rect");
+  const inputPins = chip.selectAll<SVGCircleElement, any>(".input-pins > .pin");
+  const outputPins = chip.selectAll<SVGCircleElement, any>(
+    ".output-pins > .pin"
+  );
+  const subcomponents = chip.selectAll<SVGGElement, ComponentId>(
+    ".subcomponents > .subcomponent"
+  );
+  const wires = chip.selectAll<
+    SVGPathElement,
+    ChipComponent["state"]["connections"][number]
+  >(".wires > .wire");
+
   // Get layout by first parsing subcomponent data from their elements, which should already exist
-  const subcomponentData: SubcomponentLayoutData[] = chip.state.components.map(
-    (subcomponentId: ComponentId) => {
+  const subcomponentComponentIds = subcomponents.data();
+  const subcomponentIdAttrs = subcomponentComponentIds.map((_, idx) =>
+    getSubcomponentIdAttr(idx, subcomponentIdPrefix)
+  );
+  console.log(subcomponentComponentIds);
+  const subcomponentData: SubcomponentLayoutData[] =
+    subcomponentComponentIds.map((componentId: ComponentId, idx) => {
       const subcomponentDataset = document.getElementById(
         getComponentIdAttr(
-          subcomponentId,
-          getChipOpeness(subcomponentId),
+          componentId,
+          (componentIsChip(componentId) || undefined) &&
+            getChipOpeness(subcomponentIdAttrs[idx]),
           "definition"
         )
       )!.dataset;
@@ -190,66 +281,70 @@ function buildOpenChip(
         nInputs: Number(subcomponentDataset.nInputs!),
         nOutputs: Number(subcomponentDataset.nOutputs!),
       };
-    }
-  );
+    });
 
   // TODO: I might seperate this out to have a seperate function for the wires paths
   // which would be great for dynamic changes to subcomponent positions
-  const layout = getLayout(subcomponentData, chip.state.connections);
+  const layout = getLayout(subcomponentData, wires.data(), forceDimensions);
 
-  // Then the bound box and open component pins
+  // The bound box and pin positions
+
+  box
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", layout.width)
+    .attr("height", layout.height);
+
+  inputPins
+    .attr("cx", 0)
+    .attr("cy", (_, idx) =>
+      getOpenPinYCoordinate(idx, inputPins.size(), 0, layout.height)
+    );
+
+  outputPins
+    .attr("cx", layout.width)
+    .attr("cy", (_, idx) =>
+      getOpenPinYCoordinate(idx, inputPins.size(), 0, layout.height)
+    );
 
   // Finally, the internals
 
-  g.append("g")
-    .attr("class", "subcomponents")
-    .selectAll("g")
-    .data(layout.componentPositions)
-    .enter()
-    .append("g")
-    .attr("class", "subcomponent")
-    .attr("transform", (position) => `translate(${position.x} ${position.y})`)
-    .each(function (_, idx) {
-      const subcomponentId = chip.state.components[idx];
-      d3.select(this)
-        .attr("id", getSubcomponentIdAttr(idx))
+  subcomponents
+    .attr(
+      "transform",
+      (_, idx) =>
+        `translate(${layout.componentPositions[idx].x} ${layout.componentPositions[idx].y})`
+    )
+    .each(function (componentId, idx) {
+      const subcomponentIdAttr = subcomponentIdAttrs[idx];
+      const chipState =
+        (componentIsChip(componentId) || undefined) &&
+        getChipOpeness(subcomponentIdAttr);
+
+      const subcomponent = d3
+        .select(this)
+        .attr("id", subcomponentIdAttr)
         .call(
           useComponentDefinition,
-          subcomponentId,
-          getChipOpeness(subcomponentId)
+          componentId,
+          chipState && {
+            state: chipState,
+            subcomponentIdPrefix: subcomponentIdAttr,
+          }
         );
+
+      if (chipState) {
+        subcomponent.on("click", () =>
+          chipState === "closed"
+            ? addOpenChip(subcomponentIdAttr)
+            : removeOpenChip(subcomponentIdAttr)
+        );
+      }
     });
 
-  g.append("g")
-    .attr("class", "wires")
-    .selectAll("path")
-    .data(layout.wirePaths)
-    .enter()
-    .append("path")
-    .attr("class", "wire")
-    .attr("fill", "transparent")
-    .attr("stroke", "black")
-    .attr("d", positionsToPathData)
-    .each(function (_, idx) {
-      d3.select(this).attr("id", getWireIdAttr(idx)); // IDs are important for electrical simulation
-    });
-
-  return chipDefId;
+  wires.attr("d", (_, idx) => positionsToPathData(layout.wirePaths[idx]));
 }
 
-export function useComponentDefinition(
-  g: D3Selection<SVGGElement>,
-  id: ComponentId,
-  chipState?: "open" | "closed"
-) {
-  g.append(() => {
-    const componentInstance = document
-      .getElementById(getComponentIdAttr(id, chipState, "definition"))!
-      .cloneNode(true) as SVGGElement;
-    componentInstance.setAttribute("id", getComponentIdAttr(id, chipState));
-    return componentInstance;
-  });
-}
 /**
  * Pop the `<g>` for a component for usage later. If the component is a chip, it defines
  * both the closed and open SVGs. You can use `getComponentSvgId()` to get the IDs of
@@ -258,7 +353,7 @@ export function useComponentDefinition(
  * @param id ID of the component
  * @param component The actual component info object
  */
-function defineComponent(
+export function defineComponent(
   id: ComponentId,
   component: Component,
   defs: D3Selection<SVGDefsElement>
@@ -267,8 +362,33 @@ function defineComponent(
     buildGate(id, component as GateComponent, defs.append("g"));
   } else {
     buildClosedChip(id, component as ChipComponent, defs.append("g"));
-    buildOpenChip(id, component as ChipComponent, defs.append("g"));
+    buildOpenChipSkeleton(id, component as ChipComponent, defs.append("g"));
   }
 }
 
-export default defineComponent;
+export function useComponentDefinition(
+  g: D3Selection<SVGGElement>,
+  id: ComponentId,
+  chipInfo?: {
+    state: "open" | "closed";
+    subcomponentIdPrefix: string;
+    forceDimensions?: [number, number];
+  }
+) {
+  const component = g.append(() => {
+    const instanceId = getComponentIdAttr(id, chipInfo?.state);
+    const componentDefinition = document.getElementById(
+      getComponentIdAttr(id, chipInfo?.state, "definition")
+    )! as HTMLOrSVGElement as SVGGElement;
+    const componentInstance = cloneD3NestedElement(componentDefinition);
+    componentInstance.setAttribute("id", instanceId);
+    return componentInstance;
+  });
+
+  if (chipInfo?.state === "open")
+    component.call(
+      populateOpenChipSkeleton,
+      chipInfo.subcomponentIdPrefix,
+      chipInfo.forceDimensions
+    );
+}

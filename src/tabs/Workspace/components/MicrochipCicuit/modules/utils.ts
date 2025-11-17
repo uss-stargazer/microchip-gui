@@ -32,7 +32,6 @@ export type D3Selection<
 > = d3.Selection<Element, Datum, any, any>;
 
 export function getFontSize(el: Element, fallback?: any): number | null {
-  console.log("called getFontSize");
   const labelFontSizeRaw = getStyle(el, "font-size");
   return typeof labelFontSizeRaw === "number"
     ? labelFontSizeRaw
@@ -49,6 +48,22 @@ export function positionsToPathData(positions: Position[]): string {
       (position, idx) => `${idx === 0 ? "M" : "L"} ${position.x} ${position.y}`
     )
     .join(" ");
+}
+
+function copyData(from: Element, to: Element) {
+  // @ts-ignore
+  const data = from.__data__;
+  if (data !== null && data !== undefined)
+    // @ts-ignore
+    to.__data__ = data;
+
+  for (let i = 0; i < from.children.length; i++)
+    copyData(from.children[i], to.children[i]);
+}
+export function cloneD3NestedElement<E extends Element>(element: E): E {
+  const clone = element.cloneNode(true) as E;
+  copyData(element, clone);
+  return clone;
 }
 
 /**

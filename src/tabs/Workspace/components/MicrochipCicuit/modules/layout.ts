@@ -22,7 +22,8 @@ function caculateWirePaths(
 // Padding is also handled by this function
 export function getLayout(
   components: SubcomponentLayoutData[],
-  connections: ChipComponent["state"]["connections"]
+  connections: ChipComponent["state"]["connections"],
+  forceDimensions?: [number, number]
 ): {
   width: number;
   height: number;

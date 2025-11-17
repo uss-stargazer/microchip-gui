@@ -31,7 +31,7 @@ export interface Settings {
     reoptimizeLayoutOnChipOpen: boolean;
     chipPadding: number;
   };
-  openChipHashes: string[];
+  openSubcomponentIds: string[];
 }
 
 export interface SettingsContextStructure {

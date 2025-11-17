@@ -82,6 +82,7 @@ const defaultSettingStruct: Readonly<SettingsContextStructure> = {
       reoptimizeLayoutOnChipOpen: true,
       chipPadding: 10,
     },
+    openSubcomponentIds: [],
   },
   setSettings: () => {
     throw new Error(

@@ -28,7 +28,7 @@ import {
   PIN_PADDING,
   renderComponentPins,
 } from "./pins";
-import { transparentize } from "colorizr";
+import { opacify, transparentize } from "colorizr";
 
 const GATE_PADDING = 5;
 const TEXT_LINE_PADDING = 10;
@@ -190,9 +190,9 @@ function buildOpenChipSkeleton(
 
   g.append("rect").style(
     "fill",
-    transparentize(
+    opacify(
       chip.style.color ?? displaySettings.preferences.defaultComponentColor,
-      0.25
+      0.5
     )
   );
 
@@ -244,13 +244,15 @@ function buildOpenChipSkeleton(
     .attr("stroke", "black")
     .attr("id", (_, idx) => getWireIdAttr(idx)); // IDs are important for electrical simulation
 
+  // Data (whoops! forgot to add this, DELETE COMMENT WHEN SQUASHING!)
+  g.attr("data-n-inputs", chip.nInputs).attr("data-n-outputs", chip.nOutputs);
+
   return chipDefId;
 }
 
 function populateOpenChipSkeleton(
   chip: D3Selection<SVGGElement>,
-  subcomponentIdPrefix: string,
-  forceDimensions?: [number, number]
+  subcomponentIdPrefix: string
 ) {
   const box = chip.selectChild<SVGRectElement>("rect");
   const inputPins = chip.selectAll<SVGCircleElement, any>(".input-pins > .pin");
@@ -291,7 +293,7 @@ function populateOpenChipSkeleton(
   // TODO: I might seperate this out to have a seperate function for the wires paths
   // which would be great for dynamic changes to subcomponent positions
   const connections = wires.data();
-  const layout = getLayout(subcomponentData, connections, forceDimensions);
+  const layout = getLayout(subcomponentData, connections);
   const wirePaths = caculateWirePaths(
     layout.componentPositions,
     connections,
@@ -355,6 +357,9 @@ function populateOpenChipSkeleton(
     });
 
   wires.attr("d", (_, idx) => positionsToPathData(wirePaths[idx]));
+
+  // Data (whoops! forgot to add this, DELETE COMMENT WHEN SQUASHING!)
+  g.attr("data-width", layout.width).attr("data-height", layout.height);
 }
 
 /**
@@ -384,7 +389,6 @@ export function useComponentDefinition(
   chipInfo?: {
     state: "open" | "closed";
     subcomponentIdPrefix: string;
-    forceDimensions?: [number, number];
   }
 ) {
   const component = g.append(() => {
@@ -398,9 +402,5 @@ export function useComponentDefinition(
   });
 
   if (chipInfo?.state === "open")
-    component.call(
-      populateOpenChipSkeleton,
-      chipInfo.subcomponentIdPrefix,
-      chipInfo.forceDimensions
-    );
+    component.call(populateOpenChipSkeleton, chipInfo.subcomponentIdPrefix);
 }

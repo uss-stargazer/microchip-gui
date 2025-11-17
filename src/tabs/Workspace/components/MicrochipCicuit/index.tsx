@@ -43,33 +43,58 @@ function makeCircuitComponent(
     "definition"
   );
 
-  const rootComponentDataset =
-    document.getElementById(rootComponentDefId)!.dataset;
-
   rootComponent.attr("id", "root-component").call(
     useComponentDefinition,
     rootComponentId,
     rootComponentIsChip && {
       state: "open",
       subcomponentIdPrefix: "",
-      forceDimensions: [circuitWidth, circuitHeight],
     }
   );
 
-  if (!rootComponentIsChip) {
-    const rootComponentPosition = {
-      x: circuitWidth / 2 - Number(rootComponentDataset.width) / 2,
-      y: circuitHeight / 2 - Number(rootComponentDataset.height) / 2,
-    };
-    rootComponent
-      .selectChild(".component")
-      .attr(
-        "transform",
-        `translate(${rootComponentPosition.x} ${rootComponentPosition.y})`
-      );
-  }
+  const rootComponentComponent =
+    rootComponent.selectChild<SVGGElement>(".component");
+
+  // Structure is finsihed, now just some styling. Specifically center chip and
+  // anchor pins to view box.
+
+  const rootComponentDataset = rootComponentComponent.node()!.dataset;
+
+  const startX = (layout.width - forceViewDimensions[0]) / 2;
+  const startY = -forceViewDimensions[1] / 2;
+
+  box.attr("x", startX).attr("y", startY);
+  chip
+    .selectChild<SVGGElement>(".subcomponents")
+    .attr("transform", `translate(${startX} ${startY})`);
+  chip
+    .selectChild<SVGGElement>(".wires")
+    .attr("transform", `translate(${startX} ${startY})`);
+
+  const rootComponentPosition = {
+    x: circuitWidth / 2 - Number(rootComponentDataset.width) / 2,
+    y: circuitHeight / 2 - Number(rootComponentDataset.height) / 2,
+  };
+  rootComponent
+    .selectChild(".component")
+    .attr(
+      "transform",
+      `translate(${rootComponentPosition.x} ${rootComponentPosition.y})`
+    );
 
   rootComponent.select(".component > rect").style("fill", "rgba(0,0,0,0)");
+
+  // Finally init pan zooming
+
+  svg.call(
+    makePanZoomable,
+    rootComponent,
+    [1, 5],
+    [
+      [0, 0],
+      [circuitWidth, circuitHeight],
+    ]
+  );
 }
 
 function MicrochipCicuit({
@@ -124,20 +149,6 @@ function MicrochipCicuit({
       const rootComponent = svg
         .selectChild<SVGGElement>("g#root-component")
         .call(makeCircuitComponent, svg, state.rootComponent);
-
-      // Panzooming;
-      const { width: circuitWidth, height: circuitHeight } = svg
-        .node()!
-        .getBoundingClientRect();
-      svg.call(
-        makePanZoomable,
-        rootComponent,
-        [
-          [0, 0],
-          [circuitWidth, circuitHeight],
-        ],
-        [1, 5]
-      );
 
       return () => {
         rootComponent.selectChild(".component").remove();

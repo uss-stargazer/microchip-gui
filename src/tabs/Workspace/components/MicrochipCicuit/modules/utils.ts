@@ -74,8 +74,8 @@ export function cloneD3NestedElement<E extends Element>(element: E): E {
 export function makePanZoomable(
   svg: D3Selection<SVGSVGElement>,
   targetChild: D3Selection<any>,
-  translateExtent?: [[number, number], [number, number]],
-  scaleExtent: [number, number] = [0.5, 10]
+  scaleExtent: [number, number] = [0.5, 10],
+  translateExtent?: [[number, number], [number, number]]
 ) {
   const handleZoom = (e: d3.D3ZoomEvent<SVGSVGElement, any>) => {
     targetChild.attr("transform", e.transform.toString());

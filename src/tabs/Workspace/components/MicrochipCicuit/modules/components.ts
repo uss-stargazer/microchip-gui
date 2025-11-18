@@ -66,7 +66,7 @@ function buildGate(
   // Getting the dimensions of the view box. The gate dimensions are based on the number
   // of pins and the label, so we'll do that first
 
-  const labelText = g.append("text");
+  const labelText = g.append("text").attr("class", "label");
 
   const labelWords = (gate.style.name ?? gate.state).toUpperCase().split(/\s+/);
   let labelTextLength = 0;
@@ -76,8 +76,6 @@ function buildGate(
     .enter()
     .append("tspan")
     .text((word) => word)
-    .style("alignment-baseline", "middle")
-    .style("text-anchor", "middle")
     .attr("dy", function (_, idx, tspans) {
       // Trying to get the max word length, which will be the length of the label
       const wordLength = this.getComputedTextLength();
@@ -140,7 +138,7 @@ function buildGate(
     .attr("y", 0)
     .attr("width", boxWidth)
     .attr("height", boxHeight)
-    .style(
+    .attr(
       "fill",
       gate.style.color ?? displaySettings.preferences.defaultComponentColor
     );
@@ -188,7 +186,7 @@ function buildOpenChipSkeleton(
 
   // Then the bound box (actual component pin positions will come during population)
 
-  g.append("rect").style(
+  g.append("rect").attr(
     "fill",
     opacify(
       chip.style.color ?? displaySettings.preferences.defaultComponentColor,
@@ -240,8 +238,6 @@ function buildOpenChipSkeleton(
     .enter()
     .append("path")
     .attr("class", "wire")
-    .attr("fill", "transparent")
-    .attr("stroke", "black")
     .attr("id", (_, idx) => getWireIdAttr(idx)); // IDs are important for electrical simulation
 
   // Data (whoops! forgot to add this, DELETE COMMENT WHEN SQUASHING!)

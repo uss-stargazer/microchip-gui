@@ -1,3 +1,4 @@
+import "./circuit.css";
 import * as d3 from "d3";
 import { useEffect, useRef, useState } from "react";
 import type { MicrochipState } from "microchip-dsl";
@@ -16,7 +17,6 @@ import useSettings from "../../../../hooks/useSettings";
 import {
   componentIsChip,
   defineComponent,
-  getComponentIdAttr,
   useComponentDefinition,
 } from "./modules/components";
 import type { ChipComponent, ComponentId } from "microchip-dsl/component";
@@ -42,11 +42,6 @@ function makeCircuitComponent(
   circuitDimensions: [number, number]
 ) {
   const rootComponentIsChip = componentIsChip(rootComponentId) || undefined;
-  const rootComponentDefId = getComponentIdAttr(
-    rootComponentId,
-    rootComponentIsChip && "open",
-    "definition"
-  );
 
   rootComponent.attr("id", "root-component").call(
     useComponentDefinition,
@@ -59,9 +54,22 @@ function makeCircuitComponent(
 
   const rootComponentComponent =
     rootComponent.selectChild<SVGGElement>(".component");
-  const rootComponentDataset = rootComponentComponent.node()!.dataset;
 
-  // Specifically center chip
+  // Center chip
+
+  const rootComponentDataset = rootComponentComponent.node()!.dataset;
+  const rootComponentDimensions: [number, number] = [
+    Number(rootComponentDataset.width!),
+    Number(rootComponentDataset.height!),
+  ];
+  rootComponentComponent.attr(
+    "transform",
+    `translate(${(circuitDimensions[0] - rootComponentDimensions[0]) / 2} ${
+      (circuitDimensions[1] - rootComponentDimensions[1]) / 2
+    })`
+  );
+
+  // A little styling
 
   rootComponent.select(".component > rect").style("fill", "rgba(0,0,0,0)");
 }
@@ -76,20 +84,19 @@ function makeCircuitViewBox(
 
   // Clone pins and anchor to view box
 
+  const originalInputPins = rootComponentComponent.selectChild(".input-pins");
+  const originalOutputPins = rootComponentComponent.selectChild(".output-pins");
+
   const inputPins = viewBox
-    .append(() =>
-      cloneD3NestedElement(
-        rootComponentComponent.selectChild(".input-pins").node()! as Element
-      )
-    )
+    .append(() => cloneD3NestedElement(originalInputPins.node()! as Element))
     .selectAll<SVGCircleElement, any>(".input-pins > .pin");
   const outputPins = viewBox
-    .append(() =>
-      cloneD3NestedElement(
-        rootComponentComponent.selectChild(".output-pins").node()! as Element
-      )
-    )
+    .append(() => cloneD3NestedElement(originalOutputPins.node()! as Element))
     .selectAll<SVGCircleElement, any>(".output-pins > .pin");
+
+  // We don't need these anymore
+  originalInputPins.remove();
+  originalOutputPins.remove();
 
   const nInputs = inputPins.size();
   const nOutputs = outputPins.size();
@@ -118,6 +125,8 @@ function makeCircuitViewBox(
 
   // Create new set of wires from view screen pins to the rootComponentComponent pins
   // (and vice versa for outpus). Plus make it update on zoom.
+
+  // THIS DOESN't HANDLE ZOOMING GAAAA
 
   const rootComponentNode = rootComponentComponent.node()!;
   const rootComponentDataset = rootComponentNode.dataset!;

@@ -1,0 +1,31 @@
+.label > tspan {
+  /* ".MuiTypography-body1" */
+  alignment-baseline: middle;
+  text-anchor: middle;
+}
+
+.component {
+}
+
+.component > text {
+}
+
+.component > rect {
+}
+
+.subcomponents {
+}
+
+.subcomponent {
+}
+
+.wires {
+  fill: transparent;
+  stroke: black;
+}
+
+.wire {
+}
+
+.pin {
+}

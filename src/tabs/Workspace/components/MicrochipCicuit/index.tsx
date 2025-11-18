@@ -3,9 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import type { MicrochipState } from "microchip-dsl";
 import { useTheme } from "@mui/material";
 import {
+  cloneD3NestedElement,
+  getTranslateValuesFromSVGElement,
   makePanZoomable,
+  positionsToPathData,
   type D3Selection,
+  type D3ZoomFunction,
   type DisplaySettings,
+  type Position,
 } from "./modules/utils";
 import useSettings from "../../../../hooks/useSettings";
 import {
@@ -14,7 +19,11 @@ import {
   getComponentIdAttr,
   useComponentDefinition,
 } from "./modules/components";
-import type { ComponentId } from "microchip-dsl/component";
+import type { ChipComponent, ComponentId } from "microchip-dsl/component";
+import { calculateWirePaths } from "./modules/layout";
+import { getOpenPinYCoordinate } from "./modules/pins";
+
+const ZOOM_EXTENT: [number, number] = [1, 5];
 
 // This is a pretty hacky way to get the display settings to modules outside the
 // React functional component. There's probably something better...
@@ -29,13 +38,9 @@ export let openSubcomponentIds: {
 // component but with 100% width and height.
 function makeCircuitComponent(
   rootComponent: D3Selection<SVGGElement>,
-  svg: D3Selection<SVGSVGElement>,
-  rootComponentId: ComponentId
+  rootComponentId: ComponentId,
+  circuitDimensions: [number, number]
 ) {
-  const { width: circuitWidth, height: circuitHeight } = svg
-    .node()!
-    .getBoundingClientRect();
-
   const rootComponentIsChip = componentIsChip(rootComponentId) || undefined;
   const rootComponentDefId = getComponentIdAttr(
     rootComponentId,
@@ -54,47 +59,168 @@ function makeCircuitComponent(
 
   const rootComponentComponent =
     rootComponent.selectChild<SVGGElement>(".component");
-
-  // Structure is finsihed, now just some styling. Specifically center chip and
-  // anchor pins to view box.
-
   const rootComponentDataset = rootComponentComponent.node()!.dataset;
 
-  const startX = (layout.width - forceViewDimensions[0]) / 2;
-  const startY = -forceViewDimensions[1] / 2;
-
-  box.attr("x", startX).attr("y", startY);
-  chip
-    .selectChild<SVGGElement>(".subcomponents")
-    .attr("transform", `translate(${startX} ${startY})`);
-  chip
-    .selectChild<SVGGElement>(".wires")
-    .attr("transform", `translate(${startX} ${startY})`);
-
-  const rootComponentPosition = {
-    x: circuitWidth / 2 - Number(rootComponentDataset.width) / 2,
-    y: circuitHeight / 2 - Number(rootComponentDataset.height) / 2,
-  };
-  rootComponent
-    .selectChild(".component")
-    .attr(
-      "transform",
-      `translate(${rootComponentPosition.x} ${rootComponentPosition.y})`
-    );
+  // Specifically center chip
 
   rootComponent.select(".component > rect").style("fill", "rgba(0,0,0,0)");
+}
 
-  // Finally init pan zooming
-
-  svg.call(
-    makePanZoomable,
-    rootComponent,
-    [1, 5],
-    [
-      [0, 0],
-      [circuitWidth, circuitHeight],
-    ]
+function makeCircuitViewBox(
+  viewBox: D3Selection<SVGGElement>,
+  circuitDimensions: [number, number]
+): D3ZoomFunction<SVGSVGElement> {
+  const rootComponentComponent = d3.select<SVGGElement, any>(
+    "#root-component > g.component"
   );
+
+  // Clone pins and anchor to view box
+
+  const inputPins = viewBox
+    .append(() =>
+      cloneD3NestedElement(
+        rootComponentComponent.selectChild(".input-pins").node()! as Element
+      )
+    )
+    .selectAll<SVGCircleElement, any>(".input-pins > .pin");
+  const outputPins = viewBox
+    .append(() =>
+      cloneD3NestedElement(
+        rootComponentComponent.selectChild(".output-pins").node()! as Element
+      )
+    )
+    .selectAll<SVGCircleElement, any>(".output-pins > .pin");
+
+  const nInputs = inputPins.size();
+  const nOutputs = outputPins.size();
+
+  // Calculate all the positions cause we need it later
+  const inputPinPositions = Array.from(
+    { length: nInputs },
+    (_, idx): Position => {
+      return [0, getOpenPinYCoordinate(idx, nInputs, 0, circuitDimensions[1])];
+    }
+  );
+  const outputPinPositions = Array.from(
+    { length: nOutputs },
+    (_, idx): Position => {
+      return [
+        circuitDimensions[0],
+        getOpenPinYCoordinate(idx, nOutputs, 0, circuitDimensions[1]),
+      ];
+    }
+  );
+
+  inputPins.attr("cy", (_, idx) => inputPinPositions[idx][1]);
+  outputPins
+    .attr("cx", circuitDimensions[0])
+    .attr("cy", (_, idx) => outputPinPositions[idx][1]);
+
+  // Create new set of wires from view screen pins to the rootComponentComponent pins
+  // (and vice versa for outpus). Plus make it update on zoom.
+
+  const rootComponentNode = rootComponentComponent.node()!;
+  const rootComponentDataset = rootComponentNode.dataset!;
+  const rootComponentDimensions: [number, number] = [
+    Number(rootComponentDataset.width!),
+    Number(rootComponentDataset.height!),
+  ];
+  const rootComponentOriginalPosition =
+    getTranslateValuesFromSVGElement(rootComponentNode);
+  const rootInputPinPositions = Array.from(
+    { length: nInputs },
+    (_, idx): Position => {
+      return [
+        rootComponentOriginalPosition[0],
+        getOpenPinYCoordinate(
+          idx,
+          nInputs,
+          rootComponentOriginalPosition[1],
+          rootComponentOriginalPosition[1] + rootComponentDimensions[1]
+        ),
+      ];
+    }
+  );
+  const rootOutputPinPositions = Array.from(
+    { length: nOutputs },
+    (_, idx): Position => {
+      return [
+        rootComponentOriginalPosition[0] + rootComponentDimensions[0],
+        getOpenPinYCoordinate(
+          idx,
+          nOutputs,
+          rootComponentOriginalPosition[1],
+          rootComponentOriginalPosition[1] + rootComponentDimensions[1]
+        ),
+      ];
+    }
+  );
+
+  const inputWires = viewBox
+    .append("g")
+    .attr("id", "input-to-input-wires")
+    .attr("class", "wires")
+    .selectAll("path")
+    .data(new Array(nInputs))
+    .enter()
+    .append("path");
+
+  const outputWires = viewBox
+    .append("g")
+    .attr("id", "output-to-output-wires")
+    .attr("class", "wires")
+    .selectAll("path")
+    .data(new Array(nOutputs))
+    .enter()
+    .append("path");
+
+  const inputConnections: ChipComponent["state"]["connections"] = Array.from(
+    { length: nInputs },
+    (_, idx) => {
+      return {
+        source: { component: "input", pin: idx },
+        destination: { component: "output", pin: idx },
+      };
+    }
+  );
+  const outputConnections: ChipComponent["state"]["connections"] = Array.from(
+    { length: nOutputs },
+    (_, idx) => {
+      return {
+        source: { component: "input", pin: idx },
+        destination: { component: "output", pin: idx },
+      };
+    }
+  );
+
+  const updateWirePaths = (rootComponentTransform?: d3.ZoomTransform) => {
+    const transformX = rootComponentTransform?.x ?? 0;
+    const transformY = rootComponentTransform?.y ?? 0;
+    const inputPaths = calculateWirePaths(
+      [],
+      inputPinPositions,
+      rootInputPinPositions.map((position) => [
+        position[0] + transformX,
+        position[1] + transformY,
+      ]),
+      inputConnections
+    );
+    const outputPaths = calculateWirePaths(
+      [],
+      outputPinPositions,
+      rootOutputPinPositions.map((position) => [
+        position[0] + transformX,
+        position[1] + transformY,
+      ]),
+      outputConnections
+    );
+    inputWires.attr("d", (_, idx) => positionsToPathData(inputPaths[idx]));
+    outputWires.attr("d", (_, idx) => positionsToPathData(outputPaths[idx]));
+  };
+
+  updateWirePaths();
+
+  return (e) => updateWirePaths(e.transform);
 }
 
 function MicrochipCicuit({
@@ -146,12 +272,26 @@ function MicrochipCicuit({
   useEffect(() => {
     if (openSubcomponentIds && circuitRef.current) {
       const svg = d3.select(circuitRef.current);
+
+      const { width: circuitWidth, height: circuitHeight } = svg
+        .node()!
+        .getBoundingClientRect();
+      const circuitDimensions: [number, number] = [circuitWidth, circuitHeight];
+
       const rootComponent = svg
         .selectChild<SVGGElement>("g#root-component")
-        .call(makeCircuitComponent, svg, state.rootComponent);
+        .call(makeCircuitComponent, state.rootComponent, circuitDimensions);
+
+      let viewBoxOnZoom: D3ZoomFunction<SVGSVGElement> | null = null;
+      const viewBox = svg.selectChild<SVGGElement>("g#view-box").call((g) => {
+        viewBoxOnZoom = makeCircuitViewBox(g, circuitDimensions);
+      });
+
+      svg.call(makePanZoomable, rootComponent, viewBoxOnZoom!, ZOOM_EXTENT);
 
       return () => {
         rootComponent.selectChild(".component").remove();
+        viewBox.selectAll("*").remove();
       };
     }
   }, [openSubcomponentIds.value]);
@@ -175,6 +315,7 @@ function MicrochipCicuit({
       >
         <defs id="component-definitions" />
         <g id="root-component" />
+        <g id="view-box" />
       </svg>
     </div>
   );

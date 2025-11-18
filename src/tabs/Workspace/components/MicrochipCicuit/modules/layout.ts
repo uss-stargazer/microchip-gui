@@ -8,15 +8,15 @@ export interface SubcomponentLayoutData {
   nOutputs: number;
 }
 
-export function caculateWirePaths(
+export function calculateWirePaths(
   componentPositions: Position[],
-  connections: ChipComponent["state"]["connections"],
-  widthLimit: number,
-  heightLimit: number
+  inputPinPositions: Position[],
+  outputPinPositions: Position[],
+  connections: ChipComponent["state"]["connections"]
 ): Position[][] {
   return connections.map(() => {
     return Array.from({ length: Math.random() * 5 }, () => {
-      return { x: Math.random() * 300, y: Math.random() * 500 };
+      return [Math.random() * 300, Math.random() * 500];
     });
   });
 }
@@ -30,8 +30,8 @@ export function getLayout(
   height: number;
   componentPositions: Position[];
 } {
-  const componentPositions = components.map((component) => {
-    return { x: Math.random() * 300, y: Math.random() * 500 };
+  const componentPositions = components.map((component): Position => {
+    return [Math.random() * 300, Math.random() * 500];
   });
   return {
     width: 300,

@@ -17,7 +17,7 @@ import {
 import { theme } from "../../../../../App";
 import { displaySettings } from "..";
 import {
-  caculateWirePaths,
+  calculateWirePaths,
   getLayout,
   type SubcomponentLayoutData,
 } from "./layout";
@@ -268,6 +268,7 @@ function populateOpenChipSkeleton(
   >(".wires > .wire");
 
   // Get layout by first parsing subcomponent data from their elements, which should already exist
+  const connections = wires.data();
   const subcomponentComponentIds = subcomponents.data();
   const subcomponentIdAttrs = subcomponentComponentIds.map((_, idx) =>
     getSubcomponentIdAttr(idx, subcomponentIdPrefix)
@@ -292,13 +293,32 @@ function populateOpenChipSkeleton(
 
   // TODO: I might seperate this out to have a seperate function for the wires paths
   // which would be great for dynamic changes to subcomponent positions
-  const connections = wires.data();
   const layout = getLayout(subcomponentData, connections);
-  const wirePaths = caculateWirePaths(
+
+  const inputPinPositions = Array.from(
+    { length: inputPins.size() },
+    (_, idx): Position => {
+      return [
+        0,
+        getOpenPinYCoordinate(idx, inputPins.size(), 0, layout.height),
+      ];
+    }
+  );
+  const outputPinPositions = Array.from(
+    { length: outputPins.size() },
+    (_, idx): Position => {
+      return [
+        layout.width,
+        getOpenPinYCoordinate(idx, outputPins.size(), 0, layout.height),
+      ];
+    }
+  );
+
+  const wirePaths = calculateWirePaths(
     layout.componentPositions,
-    connections,
-    layout.width,
-    layout.height
+    inputPinPositions,
+    outputPinPositions,
+    connections
   );
 
   // The bound box and pin positions
@@ -309,25 +329,17 @@ function populateOpenChipSkeleton(
     .attr("width", layout.width)
     .attr("height", layout.height);
 
-  inputPins
-    .attr("cx", 0)
-    .attr("cy", (_, idx) =>
-      getOpenPinYCoordinate(idx, inputPins.size(), 0, layout.height)
-    );
-
+  inputPins.attr("cx", 0).attr("cy", (_, idx) => inputPinPositions[idx][1]);
   outputPins
     .attr("cx", layout.width)
-    .attr("cy", (_, idx) =>
-      getOpenPinYCoordinate(idx, outputPins.size(), 0, layout.height)
-    );
+    .attr("cy", (_, idx) => inputPinPositions[idx][1]);
 
   // Finally, the internals
 
   subcomponents
     .attr(
       "transform",
-      (_, idx) =>
-        `translate(${layout.componentPositions[idx].x} ${layout.componentPositions[idx].y})`
+      (_, idx) => `translate(${layout.componentPositions[idx].join(" ")})`
     )
     .each(function (componentId, idx) {
       const subcomponentIdAttr = subcomponentIdAttrs[idx];
@@ -359,7 +371,7 @@ function populateOpenChipSkeleton(
   wires.attr("d", (_, idx) => positionsToPathData(wirePaths[idx]));
 
   // Data (whoops! forgot to add this, DELETE COMMENT WHEN SQUASHING!)
-  g.attr("data-width", layout.width).attr("data-height", layout.height);
+  chip.attr("data-width", layout.width).attr("data-height", layout.height);
 }
 
 /**

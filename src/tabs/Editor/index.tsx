@@ -77,7 +77,7 @@ function Editor() {
           borderBottomStyle: "solid",
         }}
       >
-        <StatusDropdown errorMessage={errorMessage} />
+        {errorMessage && <StatusDropdown errorMessage={errorMessage} />}
         <Box flexGrow={1} />
         <Button onClick={saveEditor}>Save</Button>
         <Button

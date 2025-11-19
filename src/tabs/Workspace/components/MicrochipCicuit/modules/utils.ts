@@ -105,3 +105,16 @@ export function makePanZoomable(
 
   svg.call(zoom);
 }
+
+export function average(...values: number[]): number {
+  const sum = values.reduce((sum, value) => sum + value, 0);
+  return sum / values.length;
+}
+
+export function movingAverage(
+  currentAverage: number,
+  currentLength: number,
+  newDatum: number
+): number {
+  return (newDatum + currentLength * currentAverage) / (currentLength + 1);
+}

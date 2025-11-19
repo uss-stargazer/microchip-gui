@@ -27,7 +27,7 @@ function WorkspaceSettings() {
 }
 
 function Sidebar() {
-  const [isOpen, setIsOpen] = useState<boolean>(true);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
   return (
     <Box

@@ -40,6 +40,7 @@ function groupComponentsByHopDistance(
     components.length
   ).fill(null);
 
+  // Main recurisive function for finding hop distances in either direction
   const getHopDistances = (
     component: ComponentIdOrIO | null,
     direction: "left" | "right"
@@ -95,9 +96,6 @@ function groupComponentsByHopDistance(
 
   getHopDistances("output", "left");
   getHopDistances("input", "right");
-
-  console.log("componentInputHopDistances", componentInputHopDistances);
-  console.log("componentOutputHopDistances", componentOutputHopDistances);
 
   return [];
 }

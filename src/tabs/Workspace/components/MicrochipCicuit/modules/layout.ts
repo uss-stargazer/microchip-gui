@@ -29,6 +29,7 @@ export function calculateWirePaths(
 
 // Get component layout ---------------------------------------------------------------------------
 
+// TODO: I really have no idea of the performance of this function...
 function groupComponentsByHopDistance(
   components: { nInputs: number; nOutputs: number }[],
   connections: ChipComponent["state"]["connections"]

@@ -17,24 +17,24 @@ function runMicrochipCode(code: string): {
     eval(
       // Maybe do main.toString() to check main
       ts.transpile(`
-                    const microchip = new Microchip();
-                    
-                    ${code}
-              
-                    if (
-                      !microchip ||
-                      !(microchip instanceof Microchip)
-                    )
-                      throw new Error("'microchip' must be defined and an instance of 'Microchip'")
-                    if (
-                      !main ||
-                      !(typeof main === "function")
-                    )
-                      throw new Error("'main' is the entry component; it must be defined and a function")
+        const microchip = new Microchip();
+        
+        ${code}
     
-                    microchip.setRootComponent(main);
-                    microchipState = microchip._getState();
-                  `)
+        if (
+            !microchip ||
+            !(microchip instanceof Microchip)
+        )
+            throw new Error("'microchip' must be defined and an instance of 'Microchip'")
+        if (
+            !main ||
+            !(typeof main === "function")
+        )
+            throw new Error("'main' is the entry component; it must be defined and a function")
+
+        microchip.setRootComponent(main);
+        microchipState = microchip._getState();
+        `)
     );
     errorMessage = null;
   } catch (error) {

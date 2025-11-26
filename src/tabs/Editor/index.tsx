@@ -8,6 +8,7 @@ import MonacoEditor from "@monaco-editor/react";
 import { Box, Button } from "@mui/material";
 import StatusDropdown from "./components/StatusDropdown";
 import { setReadOnlyLines, setupMonaco } from "./modules/monacoUtils";
+import SamplesDropdown from "./components/SamplesDropdown";
 
 function wrapEditorContents(editorContents: string): string {
   return `import { Microchip, type Signal, nullSignal, copySignal } from "microchip-dsl";
@@ -78,6 +79,7 @@ function Editor() {
         }}
       >
         {errorMessage && <StatusDropdown errorMessage={errorMessage} />}
+        <SamplesDropdown />
         <Box flexGrow={1} />
         <Button onClick={saveEditor}>Save</Button>
         <Button

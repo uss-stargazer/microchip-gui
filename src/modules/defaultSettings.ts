@@ -1,5 +1,5 @@
 import type { SettingsContextStructure } from "../hooks/useSettings";
-import { XOR as xorEditorContents } from "../tabs/Editor/components/SamplesDropdown/samples";
+import { XOR as xorEditorContents } from "../assets/sampleEditorContents";
 import runMicrochipCode from "./runMicrochipCode";
 
 const { state: xorMicrochipState, errorMessage } =

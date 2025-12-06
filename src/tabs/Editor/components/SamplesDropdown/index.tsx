@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import * as samples from "./samples";
+import * as samples from "../../../../assets/sampleEditorContents";
 import useSettings from "../../../../hooks/useSettings";
 import {
   Box,

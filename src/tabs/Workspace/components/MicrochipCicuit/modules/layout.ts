@@ -3,7 +3,8 @@ import { average, type Position } from "./utils";
 
 type ComponentIdOrIO = ComponentId | "input" | "output";
 
-const CHIP_PADDING = 5;
+const COMPONENT_PADDING_X = 20;
+const COMPONENT_PADDING_Y = 10;
 
 export interface SubcomponentLayoutData {
   width: number;
@@ -31,74 +32,80 @@ export function calculateWirePaths(
 
 // TODO: I really have no idea of the performance of this function...
 function groupComponentsByHopDistance(
-  components: { nInputs: number; nOutputs: number }[],
+  // components: { height: number }[],
   connections: ChipComponent["state"]["connections"]
 ): ComponentId[][] {
-  const componentInputHopDistances: (number | null)[] = new Array(
-    components.length
-  ).fill(null);
-  const componentOutputHopDistances: (number | null)[] = new Array(
-    components.length
-  ).fill(null);
+  const populateTiers = (
+    tiers: ComponentId[][],
+    target: "source" | "destination",
+    initialTier: ComponentIdOrIO[]
+  ) => {
+    const test = target === "destination" ? "source" : "destination";
 
-  // Main recurisive function for finding hop distances in either direction
-  const getHopDistances = (
-    component: ComponentIdOrIO | null,
-    direction: "left" | "right"
-  ): number => {
-    if (
-      component === null ||
-      (direction === "left" && component === "input") ||
-      (direction === "right" && component === "output")
-    )
-      return 0;
-
-    const componentIsId = typeof component === "number";
-    const targetHopDistanceArray =
-      direction === "left"
-        ? componentInputHopDistances
-        : componentOutputHopDistances;
-
-    if (componentIsId && targetHopDistanceArray[component] !== null)
-      return targetHopDistanceArray[component];
-
-    const hopDistancesForPins: number[] = [];
-    connections.forEach((connection) => {
-      const testComponent =
-        direction === "left"
-          ? connection.destination.component
-          : connection.source.component;
-
-      if (testComponent === component) {
-        const targetComponent =
-          direction === "left"
-            ? connection.source.component
-            : connection.destination.component;
-
-        hopDistancesForPins.push(
-          getHopDistances(targetComponent, direction) + 1
-        );
+    let currentTier = initialTier;
+    while (true) {
+      const nextTier = new Array();
+      connections.forEach((connection) => {
+        if (
+          connection[test].component && // Ignore null test components
+          typeof connection[target].component === "number" &&
+          currentTier.includes(connection[test].component) &&
+          !nextTier.includes(connection[target].component) &&
+          tiers.every(
+            (tier) => !tier.includes(connection[target].component as number)
+          )
+        ) {
+          nextTier.push(connection[target].component);
+        }
+      });
+      if (nextTier.length === 0) {
+        break;
       }
-    });
-
-    if (
-      componentIsId &&
-      hopDistancesForPins.length !==
-        (direction === "left"
-          ? components[component].nInputs
-          : components[component].nOutputs)
-    )
-      throw new Error("Unexpected number of pins");
-
-    const averageHopValue = average(...hopDistancesForPins);
-    if (componentIsId) targetHopDistanceArray[component] = averageHopValue;
-    return averageHopValue;
+      tiers.push(nextTier);
+      currentTier = nextTier;
+    }
   };
 
-  getHopDistances("output", "left");
-  getHopDistances("input", "right");
+  const leftAlignedTiers: ComponentId[][] = [];
+  const rightAlignedTiers: ComponentId[][] = [];
+  populateTiers(leftAlignedTiers, "destination", ["input"]);
+  populateTiers(rightAlignedTiers, "source", ["output"]);
 
-  return [];
+  console.log("left", leftAlignedTiers);
+  console.log("right", rightAlignedTiers);
+
+  // Aggregate tiers and normalize height
+
+  const tiers: ComponentId[][] = [];
+  leftAlignedTiers.forEach((leftAlignedTier, leftAlignedTierN) => {
+    leftAlignedTier.forEach((component) => {
+      let rightAlignedTierN;
+      for (
+        rightAlignedTierN = 0;
+        rightAlignedTierN < rightAlignedTiers.length;
+        rightAlignedTierN++
+      ) {
+        if (rightAlignedTiers[rightAlignedTierN].includes(component)) break;
+      }
+      // Ceil makes sure that decimal points create new tiers... but this is prob bad for larger things (TODO: BETTER WAY!)
+      const targetTier = Math.round(
+        rightAlignedTierN / (leftAlignedTierN + rightAlignedTierN)
+      );
+      console.log("component ", component, " tier: ", targetTier);
+      if (tiers.length < targetTier + 1) {
+        for (let i = tiers.length; i < targetTier + 1; i++) {
+          tiers.push(new Array());
+        }
+      }
+      tiers[targetTier].push(component);
+    });
+  });
+
+  // handle null inputs and outputs
+
+  console.log("center", tiers);
+
+  return tiers;
 }
 
 // Padding is also handled by this function
@@ -110,15 +117,49 @@ export function getLayout(
   height: number;
   componentPositions: Position[];
 } {
-  const componentPositions: Position[] = components.map((component) => {
-    return [Math.random() * 300, Math.random() * 500];
+  // Group elements into 'tiers' or levels in the horizontal axis
+  const tiers = groupComponentsByHopDistance(connections);
+
+  // Calculate coordinates from tiers
+
+  const componentPositions: Position[] = new Array(components.length);
+
+  let maxHeight = 0;
+  let xOffset = COMPONENT_PADDING_X;
+  tiers.forEach((tier) => {
+    const maxComponentWidth = tier.reduce(
+      (previousMax, component) =>
+        components[component].width > previousMax
+          ? components[component].width
+          : previousMax,
+      0
+    );
+
+    let yOffset = COMPONENT_PADDING_Y;
+    tier.forEach((component) => {
+      componentPositions[component] = [xOffset, yOffset];
+      yOffset += components[component].height + COMPONENT_PADDING_Y;
+    });
+    if (yOffset > maxHeight) maxHeight = yOffset;
+
+    xOffset += maxComponentWidth + COMPONENT_PADDING_X;
   });
 
-  groupComponentsByHopDistance(components, connections);
+  console.log("positions", componentPositions);
 
   return {
-    width: 300,
-    height: 500,
     componentPositions: componentPositions,
+    height: maxHeight,
+    width: xOffset,
   };
+
+  // // Temporary
+  // const componentPositions: Position[] = components.map((component) => {
+  //   return [Math.random() * 300, Math.random() * 500];
+  // });
+  // return {
+  //   width: 300,
+  //   height: 500,
+  //   componentPositions: componentPositions,
+  // };
 }

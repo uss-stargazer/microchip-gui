@@ -1,5 +1,6 @@
 import type { ChipComponent, ComponentId } from "microchip-dsl/component";
 import { average, type Position } from "./utils";
+import { component } from "microchip-dsl";
 
 type ComponentIdOrIO = ComponentId | "input" | "output";
 
@@ -11,6 +12,10 @@ export interface SubcomponentLayoutData {
   height: number;
   nInputs: number;
   nOutputs: number;
+
+  // Positioning
+  column: number | undefined;
+  y: number | undefined;
 }
 
 // Calculate wire paths ---------------------------------------------------------------------------
@@ -30,82 +35,79 @@ export function calculateWirePaths(
 
 // Get component layout ---------------------------------------------------------------------------
 
-// TODO: I really have no idea of the performance of this function...
+/**
+ * Assigns column numbers to each component in `components`
+ * @param components The components to organize and write results to
+ * @param connections Connection object for wires between components
+ * @returns Number of columns
+ */
 function groupComponentsByHopDistance(
-  // components: { height: number }[],
+  components: SubcomponentLayoutData[],
   connections: ChipComponent["state"]["connections"]
-): ComponentId[][] {
-  const populateTiers = (
-    tiers: ComponentId[][],
-    target: "source" | "destination",
-    initialTier: ComponentIdOrIO[]
-  ) => {
-    const test = target === "destination" ? "source" : "destination";
+): number {
+  const nComponents = components.length;
 
-    let currentTier = initialTier;
+  /**
+   * Calculates the distance of each component (components 0 to `nComponents` - 1)
+   * from `startComponents`. If `startPins` is "output", generally traverse to the right,
+   * else "input" means starting at the input pins of "startComponents" and moving to the
+   * left. Returns componentHopDistances and max hop distance + 1.
+   */
+  const getComponentHopDistances = (
+    nComponents: number,
+    startComponents: ComponentIdOrIO[],
+    startPins: "input" | "output"
+  ): [(number | undefined)[], number] => {
+    const componentHopDistances = new Array(nComponents).fill(undefined);
+    const target = startPins === "output" ? "destination" : "source";
+    const test = startPins === "output" ? "source" : "destination";
+
+    let distance = 0; // If you really think about it, this should be 1 hop, but we're gonna start at 0
+    let componentsAtPreviousDistance = startComponents; // TODO: could be more efficient if we just use the same array
     while (true) {
-      const nextTier = new Array();
+      const componentsAtCurrentDistance = new Array();
       connections.forEach((connection) => {
         if (
           connection[test].component && // Ignore null test components
           typeof connection[target].component === "number" &&
-          currentTier.includes(connection[test].component) &&
-          !nextTier.includes(connection[target].component) &&
-          tiers.every(
-            (tier) => !tier.includes(connection[target].component as number)
-          )
+          componentsAtPreviousDistance.includes(connection[test].component) &&
+          componentHopDistances[connection[target].component] === undefined
         ) {
-          nextTier.push(connection[target].component);
+          componentsAtCurrentDistance.push(connection[target].component);
+          componentHopDistances[connection[target].component] = distance;
         }
       });
-      if (nextTier.length === 0) {
+      if (componentsAtCurrentDistance.length === 0) {
         break;
       }
-      tiers.push(nextTier);
-      currentTier = nextTier;
+      componentsAtPreviousDistance = componentsAtCurrentDistance;
+      distance++;
     }
+
+    return [componentHopDistances, distance];
   };
 
-  const leftAlignedTiers: ComponentId[][] = [];
-  const rightAlignedTiers: ComponentId[][] = [];
-  populateTiers(leftAlignedTiers, "destination", ["input"]);
-  populateTiers(rightAlignedTiers, "source", ["output"]);
-
-  console.log("left", leftAlignedTiers);
-  console.log("right", rightAlignedTiers);
-
-  // Aggregate tiers and normalize height
-
-  const tiers: ComponentId[][] = [];
-  leftAlignedTiers.forEach((leftAlignedTier, leftAlignedTierN) => {
-    leftAlignedTier.forEach((component) => {
-      let rightAlignedTierN;
-      for (
-        rightAlignedTierN = 0;
-        rightAlignedTierN < rightAlignedTiers.length;
-        rightAlignedTierN++
-      ) {
-        if (rightAlignedTiers[rightAlignedTierN].includes(component)) break;
-      }
-      // Ceil makes sure that decimal points create new tiers... but this is prob bad for larger things (TODO: BETTER WAY!)
-      const targetTier = Math.round(
-        rightAlignedTierN / (leftAlignedTierN + rightAlignedTierN)
+  const [leftAlignedComponentColNums, nColumns] = //
+    getComponentHopDistances(nComponents, ["input"], "output");
+  const rightAlignedComponentColNums = //
+    getComponentHopDistances(nComponents, ["output"], "input")[0]
+      // Hop distnaces from chip "output" are inverted column numbers, so we invert them again
+      .map((colNum) =>
+        colNum === undefined ? undefined : nColumns - 1 - colNum
       );
-      console.log("component ", component, " tier: ", targetTier);
-      if (tiers.length < targetTier + 1) {
-        for (let i = tiers.length; i < targetTier + 1; i++) {
-          tiers.push(new Array());
-        }
-      }
-      tiers[targetTier].push(component);
-    });
+
+  // Combine and center columns
+  leftAlignedComponentColNums.forEach((lColumnNum, component) => {
+    let rColumnNum = rightAlignedComponentColNums[component];
+    if (lColumnNum === undefined || rColumnNum === undefined)
+      components[component].column = undefined;
+    else
+      components[component].column = Math.round(
+        nColumns * (lColumnNum / (lColumnNum + rColumnNum + 1))
+      );
   });
 
-  // handle null inputs and outputs
-
-  console.log("center", tiers);
-
-  return tiers;
+  return nColumns;
 }
 
 // Padding is also handled by this function
@@ -117,49 +119,33 @@ export function getLayout(
   height: number;
   componentPositions: Position[];
 } {
-  // Group elements into 'tiers' or levels in the horizontal axis
-  const tiers = groupComponentsByHopDistance(connections);
+  const nColumns = groupComponentsByHopDistance(components, connections);
 
-  // Calculate coordinates from tiers
+  // Calculate actual SVG coordinates from the `column`, `y` representation
 
   const componentPositions: Position[] = new Array(components.length);
 
   let maxHeight = 0;
   let xOffset = COMPONENT_PADDING_X;
-  tiers.forEach((tier) => {
-    const maxComponentWidth = tier.reduce(
-      (previousMax, component) =>
-        components[component].width > previousMax
-          ? components[component].width
-          : previousMax,
-      0
-    );
-
+  for (let colNum = 0; colNum < nColumns; colNum++) {
+    let maxWidth = 0;
     let yOffset = COMPONENT_PADDING_Y;
-    tier.forEach((component) => {
-      componentPositions[component] = [xOffset, yOffset];
-      yOffset += components[component].height + COMPONENT_PADDING_Y;
+
+    components.forEach((componentData, component) => {
+      if (componentData.column === colNum) {
+        componentPositions[component] = [xOffset, yOffset];
+        yOffset += componentData.height + COMPONENT_PADDING_Y;
+        if (componentData.width > maxWidth) maxWidth = componentData.width;
+      }
     });
     if (yOffset > maxHeight) maxHeight = yOffset;
 
-    xOffset += maxComponentWidth + COMPONENT_PADDING_X;
-  });
-
-  console.log("positions", componentPositions);
+    xOffset += maxWidth + COMPONENT_PADDING_X;
+  }
 
   return {
     componentPositions: componentPositions,
     height: maxHeight,
     width: xOffset,
   };
-
-  // // Temporary
-  // const componentPositions: Position[] = components.map((component) => {
-  //   return [Math.random() * 300, Math.random() * 500];
-  // });
-  // return {
-  //   width: 300,
-  //   height: 500,
-  //   componentPositions: componentPositions,
-  // };
 }

@@ -1,21 +1,18 @@
 import type { ChipComponent, ComponentId } from "microchip-dsl/component";
-import { average, type Position } from "./utils";
-import { component } from "microchip-dsl";
+import { type Position } from "./utils";
 
 type ComponentIdOrIO = ComponentId | "input" | "output";
+type PartialPosition = [njumber | undefined, number | undefined];
 
-const COMPONENT_PADDING_X = 20;
-const COMPONENT_PADDING_Y = 10;
+const COMPONENT_PADDING_X = 40;
+const COMPONENT_PADDING_Y = 20;
 
 export interface SubcomponentLayoutData {
   width: number;
   height: number;
   nInputs: number;
   nOutputs: number;
-
-  // Positioning
-  column: number | undefined;
-  y: number | undefined;
+  position: PartialPosition;
 }
 
 // Calculate wire paths ---------------------------------------------------------------------------
@@ -100,9 +97,9 @@ function groupComponentsByHopDistance(
   leftAlignedComponentColNums.forEach((lColumnNum, component) => {
     let rColumnNum = rightAlignedComponentColNums[component];
     if (lColumnNum === undefined || rColumnNum === undefined)
-      components[component].column = undefined;
+      components[component].position[0] = undefined;
     else
-      components[component].column = Math.round(
+      components[component].position[0] = Math.round(
         nColumns * (lColumnNum / (lColumnNum + rColumnNum + 1))
       );
   });
@@ -110,41 +107,81 @@ function groupComponentsByHopDistance(
   return nColumns;
 }
 
-// Padding is also handled by this function
+/**
+ * Caclulates layout of compoennts. Populates the `position` property of
+ * each component in `components
+ * @param components All the data for each component. Also uses to return resulting positions.
+ * @param connections Connection object for wires between components
+ * @returns Dimensions of the calculated layout
+ */
 export function getLayout(
   components: SubcomponentLayoutData[],
   connections: ChipComponent["state"]["connections"]
 ): {
   width: number;
   height: number;
-  componentPositions: Position[];
 } {
-  const nColumns = groupComponentsByHopDistance(components, connections);
+  // First, we use the `position` property of components to store a represententation
+  // of positions, these are the column/y relative representation. `position[0]` is the
+  // column, `position[1]` is the y.
 
-  // Calculate actual SVG coordinates from the `column`, `y` representation
+  // Primary functions to organize components and get layout in the column/y representation
+
+  const nColumns = groupComponentsByHopDistance(components, connections);
+  console.log("components", components);
+  console.log("nColumns", nColumns);
+
+  // Calculate actual SVG coordinates from the column/y representation
 
   const componentPositions: Position[] = new Array(components.length);
+  const columnHeights = new Array(nColumns);
 
-  let maxHeight = 0;
   let xOffset = COMPONENT_PADDING_X;
   for (let colNum = 0; colNum < nColumns; colNum++) {
-    let maxWidth = 0;
-    let yOffset = COMPONENT_PADDING_Y;
-
+    console.log("col: ", colNum);
+    const columnComponents: number[] = [];
     components.forEach((componentData, component) => {
-      if (componentData.column === colNum) {
-        componentPositions[component] = [xOffset, yOffset];
-        yOffset += componentData.height + COMPONENT_PADDING_Y;
-        if (componentData.width > maxWidth) maxWidth = componentData.width;
-      }
+      if (componentData.position[0] === colNum)
+        columnComponents.push(component);
     });
-    if (yOffset > maxHeight) maxHeight = yOffset;
+
+    console.log("\tcomponents", columnComponents);
+    let maxWidth = columnComponents.reduce(
+      (prevWidth, component) =>
+        components[component].width > prevWidth
+          ? components[component].width
+          : prevWidth,
+      0
+    );
+    console.log("\tmaxwidth", maxWidth);
+
+    let yOffset = COMPONENT_PADDING_Y;
+    columnComponents.forEach((component) => {
+      componentPositions[component] = [xOffset, yOffset];
+      console.log(
+        "\tsetting component",
+        component,
+        " which is now ",
+        componentPositions[component]
+      );
+      yOffset += components[component].height + COMPONENT_PADDING_Y;
+    });
+    columnHeights[colNum] = yOffset;
 
     xOffset += maxWidth + COMPONENT_PADDING_X;
   }
 
+  const maxHeight = columnHeights.reduce((prevHeight, height) =>
+    height > prevHeight ? height : prevHeight
+  );
+
+  // Finally push to components
+  components.forEach((componentData, component) => {
+    if (componentData.position[0] === undefined) return;
+    componentData.position = componentPositions[component];
+  });
+
   return {
-    componentPositions: componentPositions,
     height: maxHeight,
     width: xOffset,
   };

@@ -284,6 +284,7 @@ function populateOpenChipSkeleton(
         height: Number(subcomponentDataset.height!),
         nInputs: Number(subcomponentDataset.nInputs!),
         nOutputs: Number(subcomponentDataset.nOutputs!),
+        position: [undefined, undefined],
       };
     });
 

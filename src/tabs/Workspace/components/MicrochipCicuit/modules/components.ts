@@ -271,13 +271,11 @@ function populateOpenChipSkeleton(
   );
   const subcomponentData: SubcomponentLayoutData[] =
     subcomponentComponentIds.map((componentId: ComponentId, idx) => {
+      const chipOpeness =
+        (componentIsChip(componentId) || undefined) &&
+        getChipOpeness(subcomponentIdAttrs[idx]);
       const subcomponentDataset = document.getElementById(
-        getComponentIdAttr(
-          componentId,
-          (componentIsChip(componentId) || undefined) &&
-            getChipOpeness(subcomponentIdAttrs[idx]),
-          "definition"
-        )
+        getComponentIdAttr(componentId, chipOpeness, "definition")
       )!.dataset;
       return {
         width: Number(subcomponentDataset.width!),
@@ -285,6 +283,7 @@ function populateOpenChipSkeleton(
         nInputs: Number(subcomponentDataset.nInputs!),
         nOutputs: Number(subcomponentDataset.nOutputs!),
         position: [undefined, undefined],
+        isOpen: chipOpeness === "open",
       };
     });
 

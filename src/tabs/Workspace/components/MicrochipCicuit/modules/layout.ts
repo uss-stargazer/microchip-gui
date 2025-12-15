@@ -4,9 +4,11 @@ import {
   type PartialPosition,
   type Position,
 } from "./utils";
+import { getClosedPinYCoordinate, getOpenPinYCoordinate } from "./pins";
 
 const COMPONENT_PADDING_X = 40;
 const COMPONENT_PADDING_Y = 20;
+const WIRE_START_OFFSET = 20;
 
 export interface SubcomponentLayoutData {
   width: number;
@@ -14,20 +16,80 @@ export interface SubcomponentLayoutData {
   nInputs: number;
   nOutputs: number;
   position: PartialPosition;
+  isOpen: boolean;
 }
 
 // Calculate wire paths ---------------------------------------------------------------------------
 
 export function calculateWirePaths(
-  componentPositions: Position[],
+  components: (Omit<SubcomponentLayoutData, "position"> & {
+    position: Position;
+  })[],
   inputPinPositions: Position[],
   outputPinPositions: Position[],
   connections: ChipComponent["state"]["connections"]
 ): Position[][] {
-  return connections.map(() => {
-    return Array.from({ length: Math.random() * 5 }, () => {
-      return [Math.random() * 300, Math.random() * 500];
+  const lookupIOPinPosition = (
+    io: "input" | "output",
+    pin: number
+  ): Position | undefined =>
+    io === "input" ? inputPinPositions[pin] : outputPinPositions[pin];
+
+  return connections.map((connection) => {
+    const [source, destination] = (
+      ["source", "destination"] satisfies ("source" | "destination")[]
+    ).map((target): Position | null => {
+      switch (connection[target].component) {
+        case "input":
+        case "output":
+          return lookupIOPinPosition(
+            connection[target].component,
+            connection[target].pin!
+          )!;
+        case null:
+          return null;
+        default:
+          const component = components[connection[target].component];
+          const getPinYCoordinate = component.isOpen
+            ? getOpenPinYCoordinate
+            : getClosedPinYCoordinate;
+          const xOffset = target === "destination" ? 0 : component.width;
+          return [
+            component.position[0] + xOffset,
+            getPinYCoordinate(
+              connection[target].pin!,
+              component[target === "destination" ? "nInputs" : "nOutputs"],
+              component.position[1],
+              component.position[1] + component.height
+            ),
+          ];
+      }
     });
+
+    const path: Position[] = [];
+
+    if (source && destination && source[1] !== destination[1]) {
+      const start: Position = [source[0] + WIRE_START_OFFSET, source[1]];
+      const end: Position = [
+        destination[0] - WIRE_START_OFFSET,
+        destination[1],
+      ];
+      path.push(start);
+
+      if (end[0] - start[0] < 0) {
+        // In the case of negative x, we need to create a backward s
+        const splitYCoordinate = (start[1] + end[1]) / 2;
+        path.push([start[0], splitYCoordinate], [end[0], splitYCoordinate]);
+      } else {
+        // In all cases except a horizontal line and negative x, we need to create a step like _|-
+        const splitXCoordinate = (start[0] + end[0]) / 2;
+        path.push([splitXCoordinate, start[1]], [splitXCoordinate, end[1]]);
+      }
+
+      path.push(end);
+    }
+
+    return [source, ...path, destination].filter((p) => p !== null);
   });
 }
 

@@ -263,19 +263,50 @@ function populateOpenChipSkeleton(
     ChipComponent["state"]["connections"][number]
   >(".wires > .wire");
 
-  // Get layout by first parsing subcomponent data from their elements, which should already exist
   const connections = wires.data();
   const subcomponentComponentIds = subcomponents.data();
   const subcomponentIdAttrs = subcomponentComponentIds.map((_, idx) =>
     getSubcomponentIdAttr(idx, subcomponentIdPrefix)
   );
+
+  // The internals; populate all subcomponents
+
+  subcomponents.each(function (componentId, idx) {
+    const subcomponentIdAttr = subcomponentIdAttrs[idx];
+    const chipState =
+      (componentIsChip(componentId) || undefined) &&
+      getChipOpeness(subcomponentIdAttr);
+
+    const subcomponent = d3
+      .select(this)
+      .attr("id", subcomponentIdAttr)
+      .call(
+        useComponentDefinition,
+        componentId,
+        chipState && {
+          state: chipState,
+          subcomponentIdPrefix: subcomponentIdAttr,
+        }
+      );
+
+    if (chipState) {
+      subcomponent.on("click", () =>
+        chipState === "closed"
+          ? addOpenChip(subcomponentIdAttr)
+          : removeOpenChip(subcomponentIdAttr)
+      );
+    }
+  });
+
+  // Get layout by first parsing subcomponent data from their elements, which should already exist or was poulated above
+
   const subcomponentData: SubcomponentLayoutData[] =
     subcomponentComponentIds.map((componentId: ComponentId, idx) => {
       const chipOpeness =
         (componentIsChip(componentId) || undefined) &&
         getChipOpeness(subcomponentIdAttrs[idx]);
       const subcomponentDataset = document.getElementById(
-        getComponentIdAttr(componentId, chipOpeness, "definition")
+        getComponentIdAttr(componentId, chipOpeness)
       )!.dataset;
       return {
         width: Number(subcomponentDataset.width!),
@@ -291,6 +322,7 @@ function populateOpenChipSkeleton(
   // which would be great for dynamic changes to subcomponent positions
   const layout = getLayout(subcomponentData, connections);
 
+  // Make sure all components have a position from getLayout
   if (
     subcomponentData.some((data) => data.position.some((i) => i === undefined))
   )
@@ -303,6 +335,8 @@ function populateOpenChipSkeleton(
   > & {
     position: Position;
   })[];
+
+  // From the layout above, calculate positions for remaining features of the open chip
 
   const inputPinPositions = Array.from(
     { length: inputPins.size() },
@@ -330,7 +364,15 @@ function populateOpenChipSkeleton(
     connections
   );
 
-  // The bound box and pin positions
+  // The subcomponents positions, wire paths, bound box, and pin positions from above calculations
+
+  subcomponents.attr(
+    "transform",
+    (_, idx) =>
+      `translate(${populatedSubcomponentData[idx].position.join(" ")})`
+  );
+
+  wires.attr("d", (_, idx) => positionsToPathData(wirePaths[idx]));
 
   box
     .attr("x", 0)
@@ -343,44 +385,8 @@ function populateOpenChipSkeleton(
     .attr("cx", layout.width)
     .attr("cy", (_, idx) => inputPinPositions[idx][1]);
 
-  // Finally, the internals
-
-  subcomponents
-    .attr(
-      "transform",
-      (_, idx) =>
-        `translate(${populatedSubcomponentData[idx].position.join(" ")})`
-    )
-    .each(function (componentId, idx) {
-      const subcomponentIdAttr = subcomponentIdAttrs[idx];
-      const chipState =
-        (componentIsChip(componentId) || undefined) &&
-        getChipOpeness(subcomponentIdAttr);
-
-      const subcomponent = d3
-        .select(this)
-        .attr("id", subcomponentIdAttr)
-        .call(
-          useComponentDefinition,
-          componentId,
-          chipState && {
-            state: chipState,
-            subcomponentIdPrefix: subcomponentIdAttr,
-          }
-        );
-
-      if (chipState) {
-        subcomponent.on("click", () =>
-          chipState === "closed"
-            ? addOpenChip(subcomponentIdAttr)
-            : removeOpenChip(subcomponentIdAttr)
-        );
-      }
-    });
-
-  wires.attr("d", (_, idx) => positionsToPathData(wirePaths[idx]));
-
   // Data (whoops! forgot to add this, DELETE COMMENT WHEN SQUASHING!)
+  console.log("setting chip dimensions of", chip.attr("id"), ":", layout);
   chip.attr("data-width", layout.width).attr("data-height", layout.height);
 }
 

@@ -145,6 +145,13 @@ export function getLayout(
       if (componentData.position[0] === colNum)
         columnComponents.push(component);
     });
+    columnComponents.sort((a, b) =>
+      components[a].position[1] === undefined
+        ? -Infinity
+        : components[b].position[1] === undefined
+        ? Infinity
+        : components[a].position[1] - components[b].position[1]
+    );
 
     console.log("\tcomponents", columnComponents);
     let maxWidth = columnComponents.reduce(
@@ -158,7 +165,8 @@ export function getLayout(
 
     let yOffset = COMPONENT_PADDING_Y;
     columnComponents.forEach((component) => {
-      componentPositions[component] = [xOffset, yOffset];
+      const xOffsetForCenter = (maxWidth - components[component].width) / 2; // Center each component horizontally in the column
+      componentPositions[component] = [xOffset + xOffsetForCenter, yOffset];
       console.log(
         "\tsetting component",
         component,
@@ -172,14 +180,24 @@ export function getLayout(
     xOffset += maxWidth + COMPONENT_PADDING_X;
   }
 
+  console.log("positions", componentPositions);
+
+  // One more pass to center columns veritcially
   const maxHeight = columnHeights.reduce((prevHeight, height) =>
     height > prevHeight ? height : prevHeight
+  );
+  const columnOffsetsForCenter = columnHeights.map(
+    (columnHeight) => (maxHeight - columnHeight) / 2
   );
 
   // Finally push to components
   components.forEach((componentData, component) => {
     if (componentData.position[0] === undefined) return;
-    componentData.position = componentPositions[component];
+    componentData.position = [
+      componentPositions[component][0],
+      componentPositions[component][1] +
+        columnOffsetsForCenter[componentData.position[0]],
+    ];
   });
 
   return {
@@ -187,3 +205,6 @@ export function getLayout(
     width: xOffset,
   };
 }
+
+// TODO
+// Handle null signals ----------------------------------------------------------------------------

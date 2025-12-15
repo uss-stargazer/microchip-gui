@@ -383,7 +383,7 @@ function populateOpenChipSkeleton(
   inputPins.attr("cx", 0).attr("cy", (_, idx) => inputPinPositions[idx][1]);
   outputPins
     .attr("cx", layout.width)
-    .attr("cy", (_, idx) => inputPinPositions[idx][1]);
+    .attr("cy", (_, idx) => outputPinPositions[idx][1]);
 
   // Data (whoops! forgot to add this, DELETE COMMENT WHEN SQUASHING!)
   console.log("setting chip dimensions of", chip.attr("id"), ":", layout);

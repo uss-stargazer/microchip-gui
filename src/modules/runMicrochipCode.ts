@@ -8,11 +8,11 @@ import { type Signal, nullSignal, copySignal } from "microchip-dsl/signal";
 // Firefox and maybe other browser don't show update function names in
 // error stack trace, which breaks the way microchip-dsl runs. (THIS NEEDS TO BE FIXED!!)
 function runMicrochipCode(code: string): {
-  state: MicrochipState | null;
-  errorMessage: string | null;
+  state: MicrochipState | undefined;
+  errorMessage: string | undefined;
 } {
-  let microchipState: MicrochipState | null = null;
-  let errorMessage: string | null = null;
+  let microchipState: MicrochipState | undefined = undefined;
+  let errorMessage: string | undefined = undefined;
   try {
     eval(
       // Maybe do main.toString() to check main
@@ -36,10 +36,10 @@ function runMicrochipCode(code: string): {
         microchipState = microchip._getState();
         `)
     );
-    errorMessage = null;
+    errorMessage = undefined;
   } catch (error) {
     errorMessage = String(error);
-    microchipState = null;
+    microchipState = undefined;
   }
 
   return { state: microchipState, errorMessage: errorMessage };

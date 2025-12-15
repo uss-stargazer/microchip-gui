@@ -87,7 +87,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   ) => {
     setSettingsFunctions.get(setting)!(
       typeof newValue === "undefined"
-        ? defaultSettingStruct.settings["editor"]
+        ? defaultSettingStruct.settings[setting]
         : newValue
     );
   };
@@ -107,8 +107,8 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     }
     const { state: microchipState, errorMessage: errorMessage } =
       runMicrochipCode(settings.editor);
-    if (errorMessage) setSettings("errorMessage", errorMessage);
-    setSettings("state", microchipState || undefined);
+    setSettings("errorMessage", errorMessage);
+    setSettings("state", microchipState);
   }, [settings.editor]);
 
   return (

@@ -159,8 +159,11 @@ function groupComponentsByHopDistance(
   // Combine and center columns
   leftAlignedComponentColNums.forEach((lColumnNum, component) => {
     let rColumnNum = rightAlignedComponentColNums[component];
-    if (lColumnNum === undefined || rColumnNum === undefined)
+    if (lColumnNum === undefined && rColumnNum === undefined)
       components[component].position[0] = undefined;
+    else if (lColumnNum === undefined || rColumnNum === undefined)
+      components[component].position[0] =
+        lColumnNum === undefined ? rColumnNum : lColumnNum;
     else
       components[component].position[0] = Math.round(
         nColumns * (lColumnNum / (lColumnNum + rColumnNum + 1))

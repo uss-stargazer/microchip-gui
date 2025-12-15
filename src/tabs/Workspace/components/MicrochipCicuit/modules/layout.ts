@@ -1,8 +1,9 @@
-import type { ChipComponent, ComponentId } from "microchip-dsl/component";
-import { type Position } from "./utils";
-
-type ComponentIdOrIO = ComponentId | "input" | "output";
-type PartialPosition = [njumber | undefined, number | undefined];
+import type { ChipComponent } from "microchip-dsl/component";
+import {
+  type ComponentIdOrIO,
+  type PartialPosition,
+  type Position,
+} from "./utils";
 
 const COMPONENT_PADDING_X = 40;
 const COMPONENT_PADDING_Y = 20;

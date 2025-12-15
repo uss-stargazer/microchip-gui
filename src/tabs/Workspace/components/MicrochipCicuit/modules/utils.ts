@@ -17,6 +17,8 @@ export type SubcomponentIndex = keyof ChipComponent["state"]["components"];
 export type ConnectionIndex = keyof ChipComponent["state"]["connections"];
 
 export type Position = [number, number];
+export type PartialPosition = [number | undefined, number | undefined];
+export type ComponentIdOrIO = ComponentId | "input" | "output";
 
 export interface DisplaySettings {
   preferences: Settings["preferences"];

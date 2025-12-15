@@ -28,7 +28,7 @@ import {
   PIN_PADDING,
   renderComponentPins,
 } from "./pins";
-import { opacify, transparentize } from "colorizr";
+import { opacify } from "colorizr";
 
 const GATE_PADDING = 5;
 const TEXT_LINE_PADDING = 10;
@@ -292,6 +292,19 @@ function populateOpenChipSkeleton(
   // which would be great for dynamic changes to subcomponent positions
   const layout = getLayout(subcomponentData, connections);
 
+  if (
+    subcomponentData.some((data) => data.position.some((i) => i === undefined))
+  )
+    throw new Error(
+      "Layout calculation failed; at least one subcomponent position could not be calculated"
+    );
+  const populatedSubcomponentData = subcomponentData as (Omit<
+    SubcomponentLayoutData,
+    "position"
+  > & {
+    position: Position;
+  })[];
+
   const inputPinPositions = Array.from(
     { length: inputPins.size() },
     (_, idx): Position => {
@@ -312,7 +325,7 @@ function populateOpenChipSkeleton(
   );
 
   const wirePaths = calculateWirePaths(
-    layout.componentPositions,
+    populatedSubcomponentData,
     inputPinPositions,
     outputPinPositions,
     connections
@@ -336,7 +349,8 @@ function populateOpenChipSkeleton(
   subcomponents
     .attr(
       "transform",
-      (_, idx) => `translate(${layout.componentPositions[idx].join(" ")})`
+      (_, idx) =>
+        `translate(${populatedSubcomponentData[idx].position.join(" ")})`
     )
     .each(function (componentId, idx) {
       const subcomponentIdAttr = subcomponentIdAttrs[idx];

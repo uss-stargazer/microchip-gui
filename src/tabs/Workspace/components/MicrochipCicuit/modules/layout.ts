@@ -131,7 +131,8 @@ function groupComponentsByHopDistance(
           connection[test].component && // Ignore null test components
           typeof connection[target].component === "number" &&
           componentsAtPreviousDistance.includes(connection[test].component) &&
-          componentHopDistances[connection[target].component] === undefined
+          (componentHopDistances[connection[target].component] === undefined ||
+            componentHopDistances[connection[target].component] < distance) // We want the maximum distance
         ) {
           componentsAtCurrentDistance.push(connection[target].component);
           componentHopDistances[connection[target].component] = distance;
@@ -248,8 +249,9 @@ export function getLayout(
   console.log("positions", componentPositions);
 
   // One more pass to center columns veritcially
-  const maxHeight = columnHeights.reduce((prevHeight, height) =>
-    height > prevHeight ? height : prevHeight
+  const maxHeight = columnHeights.reduce(
+    (prevHeight, height) => (height > prevHeight ? height : prevHeight),
+    0
   );
   const columnOffsetsForCenter = columnHeights.map(
     (columnHeight) => (maxHeight - columnHeight) / 2

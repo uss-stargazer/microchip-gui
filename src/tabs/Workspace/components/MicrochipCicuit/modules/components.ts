@@ -269,8 +269,9 @@ function populateOpenChipSkeleton(
     getSubcomponentIdAttr(idx, subcomponentIdPrefix)
   );
 
-  // The internals; populate all subcomponents
+  // The internals; populate all subcomponents while also parsing subcomponent data from their elements in preperation for getLayout
 
+  const subcomponentData: SubcomponentLayoutData[] = [];
   subcomponents.each(function (componentId, idx) {
     const subcomponentIdAttr = subcomponentIdAttrs[idx];
     const chipState =
@@ -296,36 +297,33 @@ function populateOpenChipSkeleton(
           : removeOpenChip(subcomponentIdAttr)
       );
     }
-  });
 
-  // Get layout by first parsing subcomponent data from their elements, which should already exist or was poulated above
-
-  const subcomponentData: SubcomponentLayoutData[] =
-    subcomponentComponentIds.map((componentId: ComponentId, idx) => {
-      const chipOpeness =
-        (componentIsChip(componentId) || undefined) &&
-        getChipOpeness(subcomponentIdAttrs[idx]);
-      const subcomponentDataset = document.getElementById(
-        getComponentIdAttr(componentId, chipOpeness)
-      )!.dataset;
-      return {
-        width: Number(subcomponentDataset.width!),
-        height: Number(subcomponentDataset.height!),
-        nInputs: Number(subcomponentDataset.nInputs!),
-        nOutputs: Number(subcomponentDataset.nOutputs!),
-        position: [undefined, undefined],
-        isOpen: chipOpeness === "open",
-      };
+    const subcomponentDataset = subcomponent
+      .selectChild<SVGGElement>(".component")
+      .node()!.dataset;
+    subcomponentData.push({
+      width: Number(subcomponentDataset.width!),
+      height: Number(subcomponentDataset.height!),
+      nInputs: Number(subcomponentDataset.nInputs!),
+      nOutputs: Number(subcomponentDataset.nOutputs!),
+      position: [undefined, undefined],
+      isOpen: chipState === "open",
     });
+  });
+  if (subcomponentData.length < subcomponents.size())
+    throw new Error(
+      `Error getting infromation for all subcomponents of ${chip.attr("id")}`
+    );
 
   // TODO: I might seperate this out to have a seperate function for the wires paths
   // which would be great for dynamic changes to subcomponent positions
   const layout = getLayout(subcomponentData, connections);
 
   // Make sure all components have a position from getLayout
-  if (
-    subcomponentData.some((data) => data.position.some((i) => i === undefined))
-  )
+  const hasHoles = subcomponentData.some((data) =>
+    data.position.some((i) => i === undefined)
+  );
+  if (hasHoles)
     throw new Error(
       "Layout calculation failed; at least one subcomponent position could not be calculated"
     );

@@ -78,9 +78,9 @@ function makeCircuitViewBox(
   viewBox: D3Selection<SVGGElement>,
   circuitDimensions: [number, number]
 ): D3ZoomFunction<SVGSVGElement> {
-  const rootComponentComponent = d3.select<SVGGElement, any>(
-    "#root-component > g.component"
-  );
+  const rootComponent = d3.select<SVGGElement, any>("#root-component");
+  const rootComponentComponent =
+    rootComponent.selectChild<SVGGElement>("g.component");
 
   // Clone pins and anchor to view box
 
@@ -93,10 +93,6 @@ function makeCircuitViewBox(
   const outputPins = viewBox
     .append(() => cloneD3NestedElement(originalOutputPins.node()! as Element))
     .selectAll<SVGCircleElement, any>(".output-pins > .pin");
-
-  // We don't need these anymore
-  originalInputPins.remove();
-  originalOutputPins.remove();
 
   const nInputs = inputPins.size();
   const nOutputs = outputPins.size();
@@ -203,24 +199,29 @@ function makeCircuitViewBox(
   );
 
   const updateWirePaths = (rootComponentTransform?: d3.ZoomTransform) => {
-    const transformX = rootComponentTransform?.x ?? 0;
-    const transformY = rootComponentTransform?.y ?? 0;
+    let transform: [number, number] = [
+      rootComponentTransform?.x ?? 0,
+      rootComponentTransform?.y ?? 0,
+    ];
+    if (!rootComponentTransform) {
+      transform = getTranslateValuesFromSVGElement(rootComponent.node()!);
+    }
     const inputPaths = calculateWirePaths(
       [],
       inputPinPositions,
       rootInputPinPositions.map((position) => [
-        position[0] + transformX,
-        position[1] + transformY,
+        position[0] + transform[0],
+        position[1] + transform[1],
       ]),
       inputConnections
     );
     const outputPaths = calculateWirePaths(
       [],
-      outputPinPositions,
       rootOutputPinPositions.map((position) => [
-        position[0] + transformX,
-        position[1] + transformY,
+        position[0] + transform[0],
+        position[1] + transform[1],
       ]),
+      outputPinPositions,
       outputConnections
     );
     inputWires.attr("d", (_, idx) => positionsToPathData(inputPaths[idx]));

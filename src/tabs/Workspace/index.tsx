@@ -4,7 +4,7 @@ import TabLayout from "../../components/TabLayout";
 
 import Sidebar from "./components/Sidebar";
 import useSettings from "../../hooks/useSettings";
-import MicrochipCicuit from "./components/MicrochipCicuit";
+import MicrochipCircuit from "./components/MicrochipCircuit";
 import React from "react";
 
 function ErrorBanner({ children }: { children: string }) {
@@ -45,7 +45,7 @@ function Workspace() {
     >
       <Box sx={{ flexGrow: 1, height: "100%" }}>
         {errorMessage && <ErrorBanner>{errorMessage}</ErrorBanner>}
-        <MicrochipCicuit width="100%" height="100%" state={microchipState} />
+        <MicrochipCircuit state={microchipState} />
       </Box>
       <Sidebar />
     </TabLayout>

@@ -54,6 +54,11 @@ export function calculateWirePaths(
             ? getOpenPinYCoordinate
             : getClosedPinYCoordinate;
           const xOffset = target === "destination" ? 0 : component.width;
+          console.log(
+            "y range",
+            component.position[1],
+            component.position[1] + component.height
+          );
           return [
             component.position[0] + xOffset,
             getPinYCoordinate(
@@ -157,6 +162,9 @@ function groupComponentsByHopDistance(
         colNum === undefined ? undefined : nColumns - 1 - colNum
       );
 
+  console.log("left hops", leftAlignedComponentColNums);
+  console.log("right hops", rightAlignedComponentColNums);
+
   // Combine and center columns
   leftAlignedComponentColNums.forEach((lColumnNum, component) => {
     let rColumnNum = rightAlignedComponentColNums[component];
@@ -194,6 +202,8 @@ export function getLayout(
 
   // Primary functions to organize components and get layout in the column/y representation
 
+  console.log("components before", components);
+  console.log("connections before", connections);
   const nColumns = groupComponentsByHopDistance(components, connections);
   console.log("components", components);
   console.log("nColumns", nColumns);

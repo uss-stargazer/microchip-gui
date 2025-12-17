@@ -257,18 +257,14 @@ function makeCircuitViewBox(
   return (e) => updateWirePaths(e.transform);
 }
 
-function MicrochipCicuit({
-  state,
-}: {
-  width: string;
-  height: string;
-  state: MicrochipState;
-}) {
+function MicrochipCircuit({ state }: { state: MicrochipState }) {
   const theme = useTheme();
   const [settings, setSettings] = useSettings();
   displaySettings = settings;
 
-  // Have this be seperate so a change in openness doesn't cause a whole rerender
+  // Have this be seperate so a change in openness doesn't cause a whole rerender;
+  // the global openSubcomponentIds gets pushed to settings when this component unmounts,
+  // which is why there is two useEffect()'s below
   const openess = useState(settings.openSubcomponentIds);
   openSubcomponentIds = { value: openess[0], set: openess[1] };
 
@@ -303,6 +299,8 @@ function MicrochipCicuit({
     }
   }, []);
 
+  // On openSubcomponentIds change, don't rerender everything, just redraw the
+  // root component with the open components
   useEffect(() => {
     if (openSubcomponentIds && circuitRef.current) {
       const svg = d3.select(circuitRef.current);
@@ -355,4 +353,4 @@ function MicrochipCicuit({
   );
 }
 
-export default MicrochipCicuit;
+export default MicrochipCircuit;

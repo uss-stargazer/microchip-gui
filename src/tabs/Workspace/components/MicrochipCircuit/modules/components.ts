@@ -250,6 +250,8 @@ function populateOpenChipSkeleton(
   chip: D3Selection<SVGGElement>,
   subcomponentIdPrefix: string
 ) {
+  console.log("popualting", chip.attr("id"));
+
   const box = chip.selectChild<SVGRectElement>("rect");
   const inputPins = chip.selectAll<SVGCircleElement, any>(".input-pins > .pin");
   const outputPins = chip.selectAll<SVGCircleElement, any>(
@@ -278,6 +280,7 @@ function populateOpenChipSkeleton(
       (componentIsChip(componentId) || undefined) &&
       getChipOpeness(subcomponentIdAttr);
 
+    console.log("\thandling", componentId);
     const subcomponent = d3
       .select(this)
       .attr("id", subcomponentIdAttr)

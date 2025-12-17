@@ -18,7 +18,7 @@ import runMicrochipCode from "../modules/runMicrochipCode";
 export interface Settings {
   state: MicrochipState;
   editor: string;
-  errorMessage: string | null;
+  errorMessage: string | undefined;
   preferences: {
     defaultComponentColor: string;
   };
@@ -100,15 +100,11 @@ export function SettingsProvider({ children }: PropsWithChildren) {
 
   // On editor content change
   useEffect(() => {
-    if (!settings.editor) {
-      setSettings("errorMessage", null);
-      setSettings("state", undefined);
-      return;
-    }
     const { state: microchipState, errorMessage: errorMessage } =
       runMicrochipCode(settings.editor);
     setSettings("errorMessage", errorMessage);
     setSettings("state", microchipState);
+    setSettings("openSubcomponentIds", undefined);
   }, [settings.editor]);
 
   return (

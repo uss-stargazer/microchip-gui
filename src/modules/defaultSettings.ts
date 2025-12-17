@@ -5,7 +5,7 @@ import runMicrochipCode from "./runMicrochipCode";
 const { state: xorMicrochipState, errorMessage } =
   runMicrochipCode(xorEditorContents);
 
-if (xorMicrochipState === null || errorMessage) {
+if (xorMicrochipState === undefined || errorMessage) {
   throw new Error(
     `Could not compile default XOR editor contents so default settings are not valid! (${errorMessage})`
   );
@@ -22,7 +22,7 @@ const defaultSettingStruct: Readonly<SettingsContextStructure> = {
   settings: {
     state: xorMicrochipState,
     editor: editorContentsHeader + xorEditorContents,
-    errorMessage: null,
+    errorMessage: undefined,
     preferences: {
       defaultComponentColor: "orange",
     },

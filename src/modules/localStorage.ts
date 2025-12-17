@@ -57,7 +57,7 @@ export function parseLocalStorageEntry(
         case "null":
           return null;
         case "undefined":
-          if (value.data !== "undefined" || value.data !== undefined)
+          if (value.data !== "undefined" && value.data !== undefined)
             throw new Error(
               "Invalid undefined localStorage entry during parsing"
             );

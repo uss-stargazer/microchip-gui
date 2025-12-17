@@ -5,8 +5,8 @@ import type { MicrochipState } from "microchip-dsl";
 import { useTheme } from "@mui/material";
 import {
   cloneD3NestedElement,
-  getTranslateValuesFromSVGElement,
   makePanZoomable,
+  parseTransformFromSVGElement,
   positionsToPathData,
   type D3Selection,
   type D3ZoomFunction,
@@ -19,9 +19,9 @@ import {
   defineComponent,
   useComponentDefinition,
 } from "./modules/components";
-import type { ChipComponent, ComponentId } from "microchip-dsl/component";
-import { calculateWirePaths } from "./modules/layout";
+import type { ComponentId } from "microchip-dsl/component";
 import { getOpenPinYCoordinate } from "./modules/pins";
+import { WIRE_START_OFFSET } from "./modules/layout";
 
 const ZOOM_EXTENT: [number, number] = [1, 5];
 
@@ -94,6 +94,10 @@ function makeCircuitViewBox(
     .append(() => cloneD3NestedElement(originalOutputPins.node()! as Element))
     .selectAll<SVGCircleElement, any>(".output-pins > .pin");
 
+  // Don't need these anymore
+  originalInputPins.remove();
+  originalOutputPins.remove();
+
   const nInputs = inputPins.size();
   const nOutputs = outputPins.size();
 
@@ -130,18 +134,18 @@ function makeCircuitViewBox(
     Number(rootComponentDataset.width!),
     Number(rootComponentDataset.height!),
   ];
-  const rootComponentOriginalPosition =
-    getTranslateValuesFromSVGElement(rootComponentNode);
+  const rootComponentOriginalPosition: { x: number; y: number } =
+    parseTransformFromSVGElement(rootComponentNode);
   const rootInputPinPositions = Array.from(
     { length: nInputs },
     (_, idx): Position => {
       return [
-        rootComponentOriginalPosition[0],
+        rootComponentOriginalPosition.x,
         getOpenPinYCoordinate(
           idx,
           nInputs,
-          rootComponentOriginalPosition[1],
-          rootComponentOriginalPosition[1] + rootComponentDimensions[1]
+          rootComponentOriginalPosition.y,
+          rootComponentOriginalPosition.y + rootComponentDimensions[1]
         ),
       ];
     }
@@ -150,12 +154,12 @@ function makeCircuitViewBox(
     { length: nOutputs },
     (_, idx): Position => {
       return [
-        rootComponentOriginalPosition[0] + rootComponentDimensions[0],
+        rootComponentOriginalPosition.x + rootComponentDimensions[0],
         getOpenPinYCoordinate(
           idx,
           nOutputs,
-          rootComponentOriginalPosition[1],
-          rootComponentOriginalPosition[1] + rootComponentDimensions[1]
+          rootComponentOriginalPosition.y,
+          rootComponentOriginalPosition.y + rootComponentDimensions[1]
         ),
       ];
     }
@@ -179,53 +183,73 @@ function makeCircuitViewBox(
     .enter()
     .append("path");
 
-  const inputConnections: ChipComponent["state"]["connections"] = Array.from(
-    { length: nInputs },
-    (_, idx) => {
-      return {
-        source: { component: "input", pin: idx },
-        destination: { component: "output", pin: idx },
-      };
-    }
-  );
-  const outputConnections: ChipComponent["state"]["connections"] = Array.from(
-    { length: nOutputs },
-    (_, idx) => {
-      return {
-        source: { component: "input", pin: idx },
-        destination: { component: "output", pin: idx },
-      };
-    }
-  );
+  // Create the graphics for the wire looping back to viewbox inputs
+  const makePinLoopbacks = (
+    container: D3Selection<SVGGElement>,
+    pinPositions: Position[],
+    direction: -1 | 1
+  ) =>
+    container
+      .selectAll("path")
+      .data(new Array(pinPositions.length))
+      .enter()
+      .append("path")
+      .style("fill", "none")
+      .style("stroke-width", 1)
+      .style("stroke", "black")
+      .attr("d", (_, pin) =>
+        positionsToPathData(
+          Array.from({ length: 4 }, (_, idx) => [
+            pinPositions[pin][0] +
+              direction * (idx === 1 || idx === 2 ? WIRE_START_OFFSET : 0),
+            pinPositions[pin][1] +
+              (idx === 2 || idx === 3 ? WIRE_START_OFFSET : 0),
+          ])
+        )
+      );
+  viewBox
+    .append("g")
+    .attr("id", "input-loops")
+    .call(makePinLoopbacks, inputPinPositions, 1);
+  viewBox
+    .append("g")
+    .attr("id", "output-loops")
+    .call(makePinLoopbacks, outputPinPositions, -1);
 
   const updateWirePaths = (rootComponentTransform?: d3.ZoomTransform) => {
-    let transform: [number, number] = [
-      rootComponentTransform?.x ?? 0,
-      rootComponentTransform?.y ?? 0,
-    ];
+    const transform: { translate: Position; scale: number } = {
+      translate: [
+        rootComponentTransform?.x ?? 0,
+        rootComponentTransform?.y ?? 0,
+      ],
+      scale: rootComponentTransform?.k ?? 1,
+    };
     if (!rootComponentTransform) {
-      transform = getTranslateValuesFromSVGElement(rootComponent.node()!);
+      const parsed = parseTransformFromSVGElement(rootComponent.node()!);
+      transform.translate = [parsed.x, parsed.y];
+      transform.scale = parsed.k;
     }
-    const inputPaths = calculateWirePaths(
-      [],
-      inputPinPositions,
-      rootInputPinPositions.map((position) => [
-        position[0] + transform[0],
-        position[1] + transform[1],
-      ]),
-      inputConnections
-    );
-    const outputPaths = calculateWirePaths(
-      [],
-      rootOutputPinPositions.map((position) => [
-        position[0] + transform[0],
-        position[1] + transform[1],
-      ]),
-      outputPinPositions,
-      outputConnections
-    );
-    inputWires.attr("d", (_, idx) => positionsToPathData(inputPaths[idx]));
-    outputWires.attr("d", (_, idx) => positionsToPathData(outputPaths[idx]));
+
+    const viewboxLimits = [0, circuitDimensions[0]];
+    const inputPaths = rootInputPinPositions.map((p): Position[] => {
+      const transformedP = p.map(
+        (v, idx) => transform.scale * v + transform.translate[idx]
+      ) as Position;
+      return [[viewboxLimits[0], transformedP[1]], transformedP];
+    });
+    const outputPaths = rootOutputPinPositions.map((p): Position[] => {
+      const transformedP = p.map(
+        (v, idx) => transform.scale * v + transform.translate[idx]
+      ) as Position;
+      return [transformedP, [viewboxLimits[1], transformedP[1]]];
+    });
+
+    inputWires
+      .attr("d", (_, idx) => positionsToPathData(inputPaths[idx]))
+      .style("stroke-width", transform.scale);
+    outputWires
+      .attr("d", (_, idx) => positionsToPathData(outputPaths[idx]))
+      .style("stroke-width", transform.scale);
   };
 
   updateWirePaths();

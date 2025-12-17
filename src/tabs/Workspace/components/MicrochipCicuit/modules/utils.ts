@@ -66,18 +66,25 @@ export function cloneD3NestedElement<E extends Element>(element: E): E {
   return clone;
 }
 
-export function getTranslateValuesFromSVGElement(el: {
+export function parseTransformFromSVGElement(el: {
   transform: SVGGElement["transform"];
-}): Position {
+}): { x: number; y: number; k: number } {
+  const parsed = { x: 0, y: 0, kx: 1, ky: 1 };
   const transformList = el.transform.baseVal;
   for (let i = 0; i < transformList.numberOfItems; i++) {
     const transform = transformList.getItem(i);
     if (transform.type === SVGTransform.SVG_TRANSFORM_TRANSLATE) {
       const matrix = transform.matrix;
-      return [matrix.e, matrix.f];
+      parsed.x = matrix.e;
+      parsed.y = matrix.f;
+    } else if (transform.type === SVGTransform.SVG_TRANSFORM_SCALE) {
+      parsed.kx = transform.matrix.a;
+      parsed.ky = transform.matrix.d;
     }
   }
-  return [0, 0];
+  if (parsed.kx !== parsed.ky)
+    throw new Error("Scales don't preserve aspect ratio");
+  return { x: parsed.x, y: parsed.y, k: parsed.kx };
 }
 
 export type D3ZoomFunction<E extends Element> = (

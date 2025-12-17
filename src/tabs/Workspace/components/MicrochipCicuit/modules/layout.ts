@@ -8,7 +8,7 @@ import { getClosedPinYCoordinate, getOpenPinYCoordinate } from "./pins";
 
 const COMPONENT_PADDING_X = 40;
 const COMPONENT_PADDING_Y = 20;
-const WIRE_START_OFFSET = 20;
+export const WIRE_START_OFFSET = 20;
 
 export interface SubcomponentLayoutData {
   width: number;

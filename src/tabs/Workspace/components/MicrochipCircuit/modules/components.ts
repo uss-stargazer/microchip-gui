@@ -31,7 +31,7 @@ import {
 import { opacify } from "colorizr";
 
 const GATE_PADDING = 5;
-const TEXT_LINE_PADDING = 10;
+const TEXT_LINE_PADDING = 4;
 
 export const getWireIdAttr = (id: ConnectionIndex): string =>
   `w-${id.toString()}`;
@@ -69,19 +69,17 @@ function buildGate(
   const labelText = g.append("text").attr("class", "label");
 
   const labelWords = (gate.style.name ?? gate.state).toUpperCase().split(/\s+/);
-  let labelTextLength = 0;
-  labelText
+  let maxLabelTextLength = 0;
+  const labelWordTspans = labelText
     .selectAll("tspan")
     .data(labelWords)
     .enter()
     .append("tspan")
     .text((word) => word)
-    .attr("dy", function (_, idx, tspans) {
-      // Trying to get the max word length, which will be the length of the label
+    .each(function () {
+      // For the max word length, which will be the length of the label
       const wordLength = this.getComputedTextLength();
-      if (wordLength > labelTextLength) labelTextLength = wordLength;
-
-      return idx - (tspans.length / 2 - 0.5) * TEXT_LINE_PADDING;
+      if (wordLength > maxLabelTextLength) maxLabelTextLength = wordLength;
     });
 
   const labelFontSize = getFontSize(
@@ -89,12 +87,19 @@ function buildGate(
     theme.typography.body1.fontSize!
   )!;
 
-  const boxWidth = labelTextLength + 2 * GATE_PADDING,
-    boxHeight = Math.max(
-      labelFontSize * labelWords.length + 2 * GATE_PADDING,
-      gate.nInputs * (CLOSED_PIN_RADIUS * 2 + PIN_PADDING * 2),
-      gate.nOutputs * (CLOSED_PIN_RADIUS * 2 + PIN_PADDING * 2)
-    );
+  const boxWidth = maxLabelTextLength + 2 * GATE_PADDING;
+  const boxHeight = Math.max(
+    (labelFontSize + TEXT_LINE_PADDING) * labelWords.length -
+      TEXT_LINE_PADDING +
+      2 * GATE_PADDING,
+    gate.nInputs * (CLOSED_PIN_RADIUS * 2 + PIN_PADDING * 2),
+    gate.nOutputs * (CLOSED_PIN_RADIUS * 2 + PIN_PADDING * 2)
+  );
+
+  labelText.attr("y", GATE_PADDING + labelFontSize / 2);
+  labelWordTspans
+    .attr("dy", (_, idx) => (idx > 0 ? labelFontSize + TEXT_LINE_PADDING : 0))
+    .attr("x", boxWidth / 2);
 
   // Add x and y data to group element so it can be accessed outside this function
   // (width and height attributes don't actually do anything)
@@ -143,11 +148,7 @@ function buildGate(
       gate.style.color ?? displaySettings.preferences.defaultComponentColor
     );
 
-  // Update text dimensions and put back on top after everything else was built
-  labelText
-    .attr("x", boxWidth / 2)
-    .attr("y", boxHeight / 2)
-    .raise();
+  labelText.raise();
 
   return gateDefId;
 }

@@ -133,11 +133,10 @@ function groupComponentsByHopDistance(
       const componentsAtCurrentDistance = new Array();
       connections.forEach((connection) => {
         if (
-          connection[test].component && // Ignore null test components
+          connection[test].component !== null && // Ignore null test components
           typeof connection[target].component === "number" &&
           componentsAtPreviousDistance.includes(connection[test].component) &&
-          (componentHopDistances[connection[target].component] === undefined ||
-            componentHopDistances[connection[target].component] < distance) // We want the maximum distance
+          (componentHopDistances[connection[target].component] ?? -1) < distance // We want the maximum distance
         ) {
           componentsAtCurrentDistance.push(connection[target].component);
           componentHopDistances[connection[target].component] = distance;

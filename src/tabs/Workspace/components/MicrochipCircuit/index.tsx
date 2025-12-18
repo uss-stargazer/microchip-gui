@@ -20,7 +20,11 @@ import {
   useComponentDefinition,
 } from "./modules/components";
 import type { ComponentId } from "microchip-dsl/component";
-import { getOpenPinYCoordinate } from "./modules/pins";
+import {
+  getOpenPinYCoordinate,
+  LOOPBACK_PADDING,
+  makeViewBoxPin,
+} from "./modules/pins";
 import { WIRE_START_OFFSET } from "./modules/layout";
 
 const ZOOM_EXTENT: [number, number] = [1, 5];
@@ -81,27 +85,16 @@ function makeCircuitViewBox(
   const rootComponent = d3.select<SVGGElement, any>("#root-component");
   const rootComponentComponent =
     rootComponent.selectChild<SVGGElement>("g.component");
-
-  // Clone pins and anchor to view box
-
-  const originalInputPins = rootComponentComponent.selectChild(".input-pins");
-  const originalOutputPins = rootComponentComponent.selectChild(".output-pins");
-
-  const inputPins = viewBox
-    .append(() => cloneD3NestedElement(originalInputPins.node()! as Element))
-    .selectAll<SVGCircleElement, any>(".input-pins > .pin");
-  const outputPins = viewBox
-    .append(() => cloneD3NestedElement(originalOutputPins.node()! as Element))
-    .selectAll<SVGCircleElement, any>(".output-pins > .pin");
+  const nInputs = Number(rootComponentComponent.attr("data-n-inputs"));
+  const nOutputs = Number(rootComponentComponent.attr("data-n-outputs"));
 
   // Don't need these anymore
-  originalInputPins.remove();
-  originalOutputPins.remove();
 
-  const nInputs = inputPins.size();
-  const nOutputs = outputPins.size();
+  rootComponentComponent.selectChild(".input-pins").remove();
+  rootComponentComponent.selectChild(".output-pins").remove();
 
-  // Calculate all the positions cause we need it later
+  // Draw viewbox pins
+
   const inputPinPositions = Array.from(
     { length: nInputs },
     (_, idx): Position => {
@@ -118,15 +111,42 @@ function makeCircuitViewBox(
     }
   );
 
-  inputPins.attr("cy", (_, idx) => inputPinPositions[idx][1]);
-  outputPins
-    .attr("cx", circuitDimensions[0])
-    .attr("cy", (_, idx) => outputPinPositions[idx][1]);
+  viewBox
+    .append("g")
+    .attr("class", "input-pins")
+    .selectAll("g")
+    .data(new Array(nInputs))
+    .enter()
+    .append("g")
+    .call(makeViewBoxPin, "input")
+    .attr(
+      "transform",
+      (_, pin) =>
+        `translate(${
+          inputPinPositions[pin][0] +
+          " " +
+          (inputPinPositions[pin][1] - LOOPBACK_PADDING) // LOOPBACK_PADDING is the height of the viewbox pin
+        })`
+    );
+  viewBox
+    .append("g")
+    .attr("class", "output-pins")
+    .selectAll("g")
+    .data(new Array(nOutputs))
+    .enter()
+    .append("g")
+    .call(makeViewBoxPin, "output")
+    .attr(
+      "transform",
+      (_, pin) =>
+        `translate(${
+          outputPinPositions[pin][0] +
+          " " +
+          (outputPinPositions[pin][1] - LOOPBACK_PADDING) // LOOPBACK_PADDING is the height of the viewbox pin
+        })`
+    );
 
-  // Create new set of wires from view screen pins to the rootComponentComponent pins
-  // (and vice versa for outpus). Plus make it update on zoom.
-
-  // THIS DOESN't HANDLE ZOOMING GAAAA
+  // Draw wires for the rootcomponent to extend into the distance
 
   const rootComponentNode = rootComponentComponent.node()!;
   const rootComponentDataset = rootComponentNode.dataset!;
@@ -182,39 +202,6 @@ function makeCircuitViewBox(
     .data(new Array(nOutputs))
     .enter()
     .append("path");
-
-  // Create the graphics for the wire looping back to viewbox inputs
-  const makePinLoopbacks = (
-    container: D3Selection<SVGGElement>,
-    pinPositions: Position[],
-    direction: -1 | 1
-  ) =>
-    container
-      .selectAll("path")
-      .data(new Array(pinPositions.length))
-      .enter()
-      .append("path")
-      .style("fill", "none")
-      .style("stroke-width", 1)
-      .style("stroke", "black")
-      .attr("d", (_, pin) =>
-        positionsToPathData(
-          Array.from({ length: 4 }, (_, idx) => [
-            pinPositions[pin][0] +
-              direction * (idx === 1 || idx === 2 ? WIRE_START_OFFSET : 0),
-            pinPositions[pin][1] +
-              (idx === 2 || idx === 3 ? WIRE_START_OFFSET : 0),
-          ])
-        )
-      );
-  viewBox
-    .append("g")
-    .attr("id", "input-loops")
-    .call(makePinLoopbacks, inputPinPositions, 1);
-  viewBox
-    .append("g")
-    .attr("id", "output-loops")
-    .call(makePinLoopbacks, outputPinPositions, -1);
 
   const updateWirePaths = (rootComponentTransform?: d3.ZoomTransform) => {
     const transform: { translate: Position; scale: number } = {

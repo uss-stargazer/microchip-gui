@@ -19,13 +19,18 @@
 .subcomponent {
 }
 
-.wires {
-  fill: transparent;
-  stroke: black;
-}
-
+.wires,
 .wire {
+  fill: none;
+  stroke: black;
+  stroke-width: 1;
 }
 
 .pin {
+}
+
+.viewbox-pin-rect {
+  fill: white;
+  rx: 7;
+  ry: 5;
 }

@@ -29,6 +29,7 @@ import {
   renderComponentPins,
 } from "./pins";
 import { opacify } from "colorizr";
+import { quantizedWidth } from "./width";
 
 const GATE_PADDING = 5;
 const TEXT_LINE_PADDING = 4;
@@ -70,6 +71,7 @@ function buildGate(
 
   const labelWords = (gate.style.name ?? gate.state).toUpperCase().split(/\s+/);
   let maxLabelTextLength = 0;
+
   const labelWordTspans = labelText
     .selectAll("tspan")
     .data(labelWords)
@@ -87,7 +89,7 @@ function buildGate(
     theme.typography.body1.fontSize!
   )!;
 
-  const boxWidth = maxLabelTextLength + 2 * GATE_PADDING;
+  const boxWidth = quantizedWidth(maxLabelTextLength) + 2 * GATE_PADDING;
   const boxHeight = Math.max(
     (labelFontSize + TEXT_LINE_PADDING) * labelWords.length -
       TEXT_LINE_PADDING +

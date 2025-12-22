@@ -15,3 +15,11 @@ Graphical interface for displaying, testing, and exporting electrical circuits. 
   - Make it so closing and opening a chip doesn't rearrage things completely (or at least add it as a setting)
   - Make system for calculating layout positions
     - Allow programmer users to add their own custom functions to contribute to the layout
+    - Fix infinite loop problem
+    - Function to determine component order in each column
+    - Smart wire paths
+      - Don't cross components
+      - Minimize complexity
+    - Nested chip transperency
+- Electronics simulation
+  - Research how to implement in JS (libraries?)

@@ -72,6 +72,7 @@ export function calculateWirePaths(
     });
 
     const path: Position[] = [];
+    if (source) path.push(source);
 
     if (source && destination && source[1] !== destination[1]) {
       const start: Position = [source[0] + WIRE_START_OFFSET, source[1]];
@@ -94,19 +95,22 @@ export function calculateWirePaths(
       path.push(end);
     }
 
-    return [source, ...path, destination].filter((p) => p !== null);
+    if (destination) path.push(destination);
+
+    return path;
   });
 }
 
 // Get component layout ---------------------------------------------------------------------------
 
 /**
- * Assigns column numbers to each component in `components`
+ * Assigns column numbers to each component in `components`, ordering by hop distance in
+ * a network graph of the circuit.
  * @param components The components to organize and write results to
  * @param connections Connection object for wires between components
  * @returns Number of columns
  */
-function groupComponentsByHopDistance(
+function assignComponentColumns(
   components: SubcomponentLayoutData[],
   connections: ChipComponent["state"]["connections"]
 ): number {
@@ -130,6 +134,8 @@ function groupComponentsByHopDistance(
     let distance = 0; // If you really think about it, this should be 1 hop, but we're gonna start at 0
     let componentsAtPreviousDistance = startComponents; // TODO: could be more efficient if we just use the same array
     while (true) {
+      console.log("previous components", componentsAtPreviousDistance);
+      console.log("distance", distance);
       const componentsAtCurrentDistance = new Array();
       connections.forEach((connection) => {
         if (
@@ -152,6 +158,7 @@ function groupComponentsByHopDistance(
     return [componentHopDistances, distance];
   };
 
+  // Get both the left and right aligned hop distances to best get component columns
   const [leftAlignedComponentColNums, nColumns] = //
     getComponentHopDistances(nComponents, ["input"], "output");
   const rightAlignedComponentColNums = //
@@ -182,6 +189,19 @@ function groupComponentsByHopDistance(
 }
 
 /**
+ * Assigns row numbers to each component in `components`, ordering in each column by
+ * surrounding column's component's pin numbers.
+ * @param components The components to organize and write results to
+ * @param connections Connection object for wires between components
+ * @param nColumns Number of columns calculated before organizing rows
+ */
+function assignComponentRows(
+  components: SubcomponentLayoutData[],
+  connections: ChipComponent["state"]["connections"],
+  nColumns: number
+) {}
+
+/**
  * Caclulates layout of compoennts. Populates the `position` property of
  * each component in `components
  * @param components All the data for each component. Also uses to return resulting positions.
@@ -203,9 +223,11 @@ export function getLayout(
 
   console.log("components before", components);
   console.log("connections before", connections);
-  const nColumns = groupComponentsByHopDistance(components, connections);
+  const nColumns = assignComponentColumns(components, connections);
   console.log("components", components);
   console.log("nColumns", nColumns);
+
+  assignComponentRows(components, connections, nColumns);
 
   // Calculate actual SVG coordinates from the column/y representation
 

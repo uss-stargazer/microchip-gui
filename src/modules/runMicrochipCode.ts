@@ -4,6 +4,7 @@ import * as ts from "typescript";
 // these need to be here to provide the imports for the editor.
 import { type MicrochipState, Microchip } from "microchip-dsl";
 import { type Signal, nullSignal, copySignal } from "microchip-dsl/signal";
+import { type Tuple } from "../../../microchip-dsl/lib/utils";
 
 // Firefox and maybe other browser don't show update function names in
 // error stack trace, which breaks the way microchip-dsl runs. (THIS NEEDS TO BE FIXED!!)
